@@ -42,7 +42,7 @@ public class FetchAdapter {
         return new Document().append("name", name).append("value", measurement).append("unit", uom);
     }
 
-    private Document fetchWeatherData(JSONObject jsonDoc, String arrayname) throws IOException {
+    private Document fetchWeatherData(City city, JSONObject jsonDoc, String arrayname) throws IOException {
         // 2) Covert it into a MongoDB BSON document, formatted as required
         List<Document> mongoHourlyList = new ArrayList<>();
 
@@ -67,10 +67,12 @@ public class FetchAdapter {
             mongoHourlyList.add(hourDoc);
         }
 
+        // TODO: we should check if target coordinates are not too far from response coordinates
+
         // Create BSON Document
         Document mongoDoc = new Document();
-        mongoDoc.append("country","IT").append("city", "Pisa")
-                .append("coordinates", new Document("type", "point").append("coordinates", Arrays.asList(43.716667, 10.400000)))
+        mongoDoc.append("country",city.getCountry()).append("city", city.getCity())
+                .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
                 .append("enabled", false)
                 .append("periodStart","22-12-19") // TODO: implement per week documents
                 .append("periodEnd","29-12-19")
@@ -82,16 +84,16 @@ public class FetchAdapter {
         return mongoDoc;
     }
 
-    public Document fetchHistoricalData(LocalDate day) throws IOException {
+    public Document fetchHistoricalData(LocalDate day, City city) throws IOException {
         // 1) Get hourly weather data for specified day
-        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getHistoricalWeather(43.716667,10.40, day);
-        return fetchWeatherData(jsonDoc, "weatherCondition");
+        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getHistoricalWeather(city.getCoords().lat, city.getCoords().lat, day);
+        return fetchWeatherData(city, jsonDoc, "weatherCondition");
     }
 
-    public Document fetchForecastData(LocalDate day) throws IOException {
+    public Document fetchForecastData(City city) throws IOException {
         // 1) Get hourly weather data for specified day
-        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getDailyForecast(43.716667,10.40);
-        return fetchWeatherData(jsonDoc, "weatherForecast");
+        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getDailyForecast(city.getCoords().lat, city.getCoords().lat);
+        return fetchWeatherData(city, jsonDoc, "weatherForecast");
     }
 
     public Document fetchPollutionData(City city, LocalDate day) throws IOException {
@@ -152,9 +154,18 @@ public class FetchAdapter {
 
     public static void main(String[] args) throws IOException {
         City cityRome = new City("IT", "Roma", new City.Coords(41.902782,12.4963));
-        //FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1));
-        //FetchAdapter.getInstance().fetchForecastData(LocalDate.now());
-        Document mongoDoc = FetchAdapter.getInstance().fetchPollutionData(cityRome, LocalDate.now().minusDays(2));
+
+        Document mongoDoc;
+        System.out.println("Test 1 (fetchHistoricalData):");
+        mongoDoc = FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1), cityRome);
+        System.out.println(mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build()));
+
+        System.out.println("Test 2 (fetchForecastData):");
+        mongoDoc = FetchAdapter.getInstance().fetchForecastData(cityRome);
+        System.out.println(mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build()));
+
+        System.out.println("Test 3 (fetchPollutionData):");
+        mongoDoc = FetchAdapter.getInstance().fetchPollutionData(cityRome, LocalDate.now().minusDays(2));
         System.out.println(mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build()));
     }
 }
