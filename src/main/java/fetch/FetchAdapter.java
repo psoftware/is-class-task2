@@ -40,10 +40,7 @@ public class FetchAdapter {
         return new Document().append("name", name).append("value", measurement).append("unit", uom);
     }
 
-    public void fetchForecastData(LocalDate day) throws IOException {
-        // 1) Get hourly weather data for specified day
-        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getDailyForecast(43.716667,10.40);
-
+    private Document fetchWeatherData(JSONObject jsonDoc, String arrayname) throws IOException {
         // 2) Covert it into a MongoDB BSON document, formatted as required
         List<Document> mongoHourlyList = new ArrayList<>();
 
@@ -75,14 +72,28 @@ public class FetchAdapter {
                 .append("enabled", false)
                 .append("periodStart","22-12-19") // TODO: implement per week documents
                 .append("periodEnd","29-12-19")
-                .append("weatherForecast", mongoHourlyList);
+                .append(arrayname, mongoHourlyList);
 
 
         // 3) Submit into database without duplicates
-        mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build());
+        //mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build());
+        return mongoDoc;
+    }
+
+    public Document fetchHistoricalData(LocalDate day) throws IOException {
+        // 1) Get hourly weather data for specified day
+        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getHistoricalWeather(43.716667,10.40, day);
+        return fetchWeatherData(jsonDoc, "weatherCondition");
+    }
+
+    public Document fetchForecastData(LocalDate day) throws IOException {
+        // 1) Get hourly weather data for specified day
+        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getDailyForecast(43.716667,10.40);
+        return fetchWeatherData(jsonDoc, "weatherForecast");
     }
 
     public static void main(String[] args) throws IOException {
+        FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1));
         FetchAdapter.getInstance().fetchForecastData(LocalDate.now());
     }
 }
