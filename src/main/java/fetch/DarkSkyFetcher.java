@@ -55,36 +55,6 @@ public class DarkSkyFetcher {
                 "UTF-8").useDelimiter("\\A").next();
     }
 
-    /*private static String readFile(String path) throws IOException
-    {
-        byte[] encoded = Files.readAllBytes(Paths.get(path));
-        getClass().getClassLoader().getResourceAsStream("asd").rea;
-        new String();
-        return new String(encoded, Charset.defaultCharset());
-    }*/
-
-    private String doGet(String url) throws IOException {
-        URL obj = new URL(url);
-        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-        con.setRequestMethod("GET");
-        int responseCode = con.getResponseCode();
-        if (responseCode == HttpURLConnection.HTTP_OK) { // success
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuilder response = new StringBuilder();
-
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-
-            // print result
-            return response.toString();
-        } else {
-            throw new IllegalStateException("Got HTTP unexpected status");
-        }
-    }
-
     public JSONObject getDailyForecast(Double latitude, Double longitude) throws IOException {
         /*if(day.compareTo(LocalDate.now()) < 0)
             throw new IllegalArgumentException("Cannot fetch forecast of past days");*/
@@ -93,7 +63,7 @@ public class DarkSkyFetcher {
         if(DEBUG_MODE)
             jsonString = readResource("darkskyexample.json");
         else
-            jsonString = doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+"?units=si");
+            jsonString = FetchUtils.doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+"?units=si");
 
         // Parse JSON
         return new JSONObject(jsonString);
@@ -109,7 +79,7 @@ public class DarkSkyFetcher {
             jsonString = readResource("darkskyexample.json");
         else
             jsonString =
-                    doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+","+day.toEpochDay()+"?units=si");
+                    FetchUtils.doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+","+day.toEpochDay()+"?units=si");
 
         // Parse JSON
         return new JSONObject(jsonString);

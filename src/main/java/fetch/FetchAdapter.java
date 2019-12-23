@@ -1,5 +1,6 @@
 package main.java.fetch;
 
+import main.java.City;
 import org.bson.Document;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -8,6 +9,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class FetchAdapter {
@@ -92,8 +94,67 @@ public class FetchAdapter {
         return fetchWeatherData(jsonDoc, "weatherForecast");
     }
 
+    public Document fetchPollutionData(City city, LocalDate day) throws IOException {
+        JSONObject jsonDoc = OpenAQFetcher.getInstance().getPollutionMeasurements(city.getCountry(), city.getCity(),
+                        day.atTime(0,0), day.atTime(23,59));
+
+        // Map<SensorLocation, <Datetime, List<Measures>>>
+        HashMap<String, HashMap<LocalDateTime, List<Document>>> locationToDateMeasureMap
+                = new HashMap<>();
+
+        // Iterate over results and group readings by sensorlocation and datetime
+        JSONArray jsonMeasureList = jsonDoc.getJSONArray("results");
+        for(int i=0; i<jsonMeasureList.length(); i++) {
+            JSONObject hourdata = jsonMeasureList.getJSONObject(i);
+            String parameter = hourdata.getString("parameter");
+            String uof = hourdata.getString("unit");
+            Float value = hourdata.getFloat("value");
+            String sensorLocation = hourdata.getString("location");
+            Document measureDoc = new Document().append("name", parameter)
+                    .append("unit", uof)
+                    .append("value", value);
+
+            // Insert document into hashmap (with composite key sensorlocation-datetime)
+            // create sub-hashmap or list if needed
+            LocalDateTime datetime = LocalDateTime.parse(hourdata.getJSONObject("date").getString("utc"),
+                    OpenAQFetcher.DATE_TIME_FORMATTER);
+            if(!locationToDateMeasureMap.containsKey(sensorLocation))
+                locationToDateMeasureMap.put(sensorLocation, new HashMap<>());
+            if(!locationToDateMeasureMap.get(sensorLocation).containsKey(datetime))
+                locationToDateMeasureMap.get(sensorLocation).put(datetime, new ArrayList<>());
+            locationToDateMeasureMap.get(sensorLocation).get(datetime).add(measureDoc);
+        }
+
+        // Iterate hashmap by sensorlocation first, then by datetime
+        // for each group create one document with all grouped readings
+        List<Document> finalReadingList = new ArrayList<>();
+        for(Map.Entry<String, HashMap<LocalDateTime, List<Document>>> locationEntry : locationToDateMeasureMap.entrySet()) {
+            String location = locationEntry.getKey();
+            for (Map.Entry<LocalDateTime, List<Document>> dateEntry : locationEntry.getValue().entrySet()) {
+                LocalDateTime datetime = dateEntry.getKey();
+                Document hourdoc = new Document("location", location).append("datetime", datetime.toString())
+                        .append("measurements", dateEntry.getValue());
+                finalReadingList.add(hourdoc);
+            }
+        }
+
+        // Create BSON Document
+        Document mongoDoc = new Document();
+        mongoDoc.append("country",city.getCountry()).append("city", city.getCity())
+                .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
+                .append("enabled", false)
+                .append("periodStart", day.toString()) // TODO: implement per week documents
+                .append("periodEnd", day.toString())
+                .append("pollutionMeasurements", finalReadingList);
+
+        return mongoDoc;
+    }
+
     public static void main(String[] args) throws IOException {
-        FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1));
-        FetchAdapter.getInstance().fetchForecastData(LocalDate.now());
+        City cityRome = new City("IT", "Roma", new City.Coords(41.902782,12.4963));
+        //FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1));
+        //FetchAdapter.getInstance().fetchForecastData(LocalDate.now());
+        Document mongoDoc = FetchAdapter.getInstance().fetchPollutionData(cityRome, LocalDate.now().minusDays(2));
+        System.out.println(mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build()));
     }
 }
