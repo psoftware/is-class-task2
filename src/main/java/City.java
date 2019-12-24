@@ -26,6 +26,11 @@ public class City {
         return coords;
     }
 
+    @Override
+    public String toString() {
+        return city + ',' + country + " at " + ((coords != null) ? coords.toString() : "null");
+    }
+
     public static class Coords {
         public double lat, lon;
         public Coords(double lat, double lon) {
@@ -35,6 +40,11 @@ public class City {
 
         public List<Double> asList() {
             return Arrays.asList(lat, lon);
+        }
+
+        @Override
+        public String toString() {
+            return "(" + lat + ',' + lon + ')';
         }
     }
 }

@@ -26,7 +26,8 @@ public class FetchUtils {
             // print result
             return response.toString();
         } else {
-            throw new IllegalStateException("Got HTTP unexpected status");
+            throw new IllegalStateException("Got HTTP unexpected status " + responseCode + ": " + con.getResponseMessage()
+                    + "\nfor url " + url);
         }
     }
 
