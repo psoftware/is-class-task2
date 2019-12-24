@@ -1,5 +1,6 @@
 package main.java.fetch;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -37,6 +38,32 @@ public class OpenAQFetcher {
                         "&date_to=" + URLEncoder.encode(toDate.format(DATE_TIME_FORMATTER), "UTF-8") +
                         "&limit=" + 10000);
         return new JSONObject(jsonString);
+    }
+
+    public JSONObject getAllCities() throws IOException {
+        String jsonString = FetchUtils.doGet("https://api.openaq.org/v1/cities?limit=10000");
+        return new JSONObject(jsonString);
+    }
+
+    public JSONObject getAllLocations() throws IOException {
+        int limit = 10000;
+
+        String jsonString = FetchUtils.doGet("https://api.openaq.org/v1/locations?page=1&limit=" + limit);
+        JSONObject jsonDoc = new JSONObject(jsonString);
+        JSONArray destinationArray = jsonDoc.getJSONArray("results");
+
+        int found = jsonDoc.getJSONObject("meta").getInt("found");
+        int requiredPages = (found + limit - 1) / limit;
+        for(int i=2; i<=requiredPages; i++) {
+            JSONArray nextJsonArray = new JSONObject(
+                    FetchUtils.doGet("https://api.openaq.org/v1/locations?page=" + i + "&limit=" + limit)
+            ).getJSONArray("results");
+
+            for (int j=0; j < nextJsonArray.length(); j++)
+                destinationArray.put(nextJsonArray.getJSONObject(j));
+        }
+
+        return jsonDoc;
     }
 
     public static void main(String[] args) throws IOException {

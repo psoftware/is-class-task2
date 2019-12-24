@@ -7,7 +7,7 @@ import org.bson.json.JsonWriterSettings;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -152,20 +152,123 @@ public class FetchAdapter {
         return mongoDoc;
     }
 
-    public static void main(String[] args) throws IOException {
-        City cityRome = new City("IT", "Roma", new City.Coords(41.902782,12.4963));
+    // Use this method to generate city list to batch on geocode.xyz
+    /*
+    public List<City> fetchAllCitiesNames() throws IOException {
+        List<City> resultList = new ArrayList<>();
 
-        Document mongoDoc;
-        System.out.println("Test 1 (fetchHistoricalData):");
-        mongoDoc = FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1), cityRome);
-        System.out.println(mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build()));
+        JSONObject jsonDoc = OpenAQFetcher.getInstance().getAllCities();
+        JSONArray jsonCityList = jsonDoc.getJSONArray("results");
+        for(int i=0; i<jsonCityList.length(); i++) {
+            JSONObject jsonCity = jsonCityList.getJSONObject(i);
+            String country = jsonCity.getString("country");
+            String city = jsonCity.getString("city");
 
-        System.out.println("Test 2 (fetchForecastData):");
-        mongoDoc = FetchAdapter.getInstance().fetchForecastData(cityRome);
-        System.out.println(mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build()));
+            // filter unuseful locations
+            if(city.equals("N/A") || country.equals("N/A") || city.equals("unused"))
+                continue;
 
-        System.out.println("Test 3 (fetchPollutionData):");
-        mongoDoc = FetchAdapter.getInstance().fetchPollutionData(cityRome, LocalDate.now().minusDays(2));
-        System.out.println(mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build()));
+            // Get coordinates from geoinfo
+            // DON'T. It takes 5-10 sec per city and returns http bad errors at some point
+            // JSONObject jsonGeoinfo = GeoCodeFetcher.getInstance().forwardGeocode(city +","+country);
+            // Float confidence = jsonGeoinfo.getJSONObject("standard").getFloat("confidence");
+            // if(confidence <= 0.4)
+            //    continue;
+
+            // Double latitude = jsonGeoinfo.getDouble("latt");
+            // Double longitude = jsonGeoinfo.getDouble("longt");
+
+            City newcity = new City(country, city, null);
+            resultList.add(newcity);
+
+            System.out.println(newcity);
+        }
+
+        return resultList;
+    }
+
+    public void dumpCitiesNames(String filepath) throws IOException {
+        List<City> cityList = fetchAllCitiesNames();
+
+        File fout = new File(filepath);
+        FileOutputStream fos = new FileOutputStream(fout);
+        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+        for(City city : cityList) {
+            bw.write(city.getCity() + "," + city.getCountry());
+            bw.newLine();
+        }
+        bw.close();
+    }
+    */
+
+    public List<City> fetchAllCitiesAsList() throws IOException {
+        List<City> resultList = new ArrayList<>();
+
+        JSONObject jsonDoc = OpenAQFetcher.getInstance().getAllLocations();
+        JSONArray jsonLocationList = jsonDoc.getJSONArray("results");
+        HashSet<String> alreadyAdded = new HashSet<>();
+        for(int i=0; i<jsonLocationList.length(); i++) {
+            JSONObject jsonLocation = jsonLocationList.getJSONObject(i);
+            String country = jsonLocation.getString("country");
+            String city = jsonLocation.getString("city");
+            Double latitude = jsonLocation.getJSONObject("coordinates").getDouble("latitude");
+            Double longitude = jsonLocation.getJSONObject("coordinates").getDouble("longitude");
+
+            // filter unuseful locations
+            if(city.equals("N/A") || country.equals("N/A") || city.equals("unused"))
+                continue;
+
+            // TODO: Fix this design error. What coordinate set should we use if there are many locations in the same city?
+            String cityHashKey = country + ',' + city;
+            if(alreadyAdded.contains(cityHashKey))
+                continue;
+
+            City newcity = new City(country, city, new City.Coords(latitude, longitude));
+            resultList.add(newcity);
+            alreadyAdded.add(cityHashKey);
+        }
+
+        return resultList;
+    }
+
+    public List<Document> fetchAllCities() throws IOException {
+        List<City> cityList = fetchAllCitiesAsList();
+        List<Document> resList = new ArrayList<>();
+        for(City city : cityList) {
+            Document newDoc = new Document()
+                    .append("country", city.getCountry())
+                    .append("city", city.getCity())
+                    .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()));
+            resList.add(newDoc);
+        }
+
+        return resList;
+    }
+
+    public static void main(String[] args) {
+        JsonWriterSettings jsonWriterSettings = JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build();
+        try {
+            City cityRome = new City("IT", "Roma", new City.Coords(41.902782, 12.4963));
+
+            Document mongoDoc;
+            System.out.println("Test 1 (fetchHistoricalData):");
+            mongoDoc = FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1), cityRome);
+            System.out.println(mongoDoc.toJson(jsonWriterSettings));
+
+            System.out.println("Test 2 (fetchForecastData):");
+            mongoDoc = FetchAdapter.getInstance().fetchForecastData(cityRome);
+            System.out.println(mongoDoc.toJson(jsonWriterSettings));
+
+            System.out.println("Test 3 (fetchPollutionData):");
+            mongoDoc = FetchAdapter.getInstance().fetchPollutionData(cityRome, LocalDate.now().minusDays(2));
+            System.out.println(mongoDoc.toJson(jsonWriterSettings));
+
+            System.out.println("Test 4 (fetchAllCities):");
+            List<Document> cityList = FetchAdapter.getInstance().fetchAllCities();
+            cityList.forEach(d -> System.out.println(d.toJson(jsonWriterSettings)));
+
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 }
