@@ -50,18 +50,13 @@ public class DarkSkyFetcher {
 
     }
 
-    private static String readResource(String filename) {
-        return new Scanner(DarkSkyFetcher.class.getClassLoader().getResourceAsStream("darkskyexample.json"),
-                "UTF-8").useDelimiter("\\A").next();
-    }
-
     public JSONObject getDailyForecast(Double latitude, Double longitude) throws IOException {
         /*if(day.compareTo(LocalDate.now()) < 0)
             throw new IllegalArgumentException("Cannot fetch forecast of past days");*/
         // Do HTTP Request
         String jsonString;
         if(DEBUG_MODE)
-            jsonString = readResource("darkskyexample.json");
+            jsonString = FetchUtils.readResource("darkskyexample.json");
         else
             jsonString = FetchUtils.doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+"?units=si");
 
@@ -76,7 +71,7 @@ public class DarkSkyFetcher {
         // Do HTTP Request
         String jsonString;
         if(DEBUG_MODE)
-            jsonString = readResource("darkskyexample.json");
+            jsonString = FetchUtils.readResource("darkskyexample.json");
         else
             jsonString =
                     FetchUtils.doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+","+day.toEpochDay()+"?units=si");

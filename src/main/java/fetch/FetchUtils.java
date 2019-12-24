@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Scanner;
 
 public class FetchUtils {
     public static String doGet(String url) throws IOException {
@@ -27,5 +28,10 @@ public class FetchUtils {
         } else {
             throw new IllegalStateException("Got HTTP unexpected status");
         }
+    }
+
+    public static String readResource(String filename) {
+        return new Scanner(FetchUtils.class.getClassLoader().getResourceAsStream(filename),
+                "UTF-8").useDelimiter("\\A").next();
     }
 }
