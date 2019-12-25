@@ -30,6 +30,11 @@ public class User {
     public void setStatus(Status status) { this.status = status; }
 
     @Override
+    public String toString() {
+        return "Username: " + username + ", Name: " + name + ", Surname: " + surname +  ", Status: " + status.toString();
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if(obj == this)
             return true;
