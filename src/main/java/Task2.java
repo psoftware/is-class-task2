@@ -34,7 +34,7 @@ public class Task2 extends Application {
                 ? Projection.WGS_84 : Projection.WEB_MERCATOR;
         controller.initMapAndControls(projection);
 
-        Scene scene = new Scene(root, 300, 275);
+        Scene scene = new Scene(root, 800, 600);
         stage.setTitle("Map Page");
         stage.setScene(scene);
         stage.show();

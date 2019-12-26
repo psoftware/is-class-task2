@@ -2,20 +2,84 @@
 <?import com.sothawo.mapjfx.MapView?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0"
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<?import javafx.scene.layout.AnchorPane?>
+<BorderPane maxHeight="+Infinity" maxWidth="+Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0"
             prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="main.java.gui.Task2GUIController">
     <top>
-        <!-- top controls here -->
+        <MenuBar fx:id="TopMenu" BorderPane.alignment="CENTER">
+            <menus>
+                <Menu mnemonicParsing="false" text="Locations">
+                    <items>
+                        <MenuItem mnemonicParsing="false" text="Add Location" />
+                        <MenuItem mnemonicParsing="false" text="Remove Location" />
+                        <MenuItem mnemonicParsing="false" text="Propose Location" />
+                    </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Users">
+                    <items>
+                        <MenuItem mnemonicParsing="false" text="Enable / Disable User" />
+                        <MenuItem mnemonicParsing="false" text="Promote to / Demote from Admin" />
+                    </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Admin">
+                    <items>
+                        <MenuItem mnemonicParsing="false" text="Insert Weather / Pollution Data" />
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
     </top>
     <center>
         <MapView fx:id="mapView" BorderPane.alignment="CENTER"/>
     </center>
     <bottom>
-        <!-- bottom controls here -->
+
     </bottom>
     <left>
-        <!-- left controls here -->
+        <Accordion fx:id="leftControls" BorderPane.alignment="CENTER">
+            <panes>
+                <TitledPane fx:id="paneFilters" animated="true" text="Filter">
+                    <content>
+                        <VBox spacing="10.0">
+                            <children>
+                                <Label fx:id="labelCountry" text="Country "/>
+                                <TextField fx:id="textCountry"></TextField>
+                                <Label fx:id="labelCity" text="City "/>
+                                <TextField fx:id="textCity"></TextField>
+                                <Button fx:id="buttonFilter" text="Search" maxWidth="Infinity"/>
+                            </children>
+                        </VBox>
+                    </content>
+                </TitledPane>
+                <TitledPane fx:id="paneLocations" animated="true" text="Locations">
+                    <content>
+                        <ScrollPane>
+                            <content>
+                                <VBox fx:id="locationButtons" spacing="10.0"/>
+                            </content>
+                        </ScrollPane>
+                    </content>
+                </TitledPane>
+                <TitledPane fx:id="paneActions" animated="true" text="Actions">
+                    <content>
+                        <VBox spacing="10.0">
+                            <children>
+                                <Button fx:id="buttonShowWeatherHistory" text="Show Weather History" maxWidth="Infinity"/>
+                                <Button fx:id="buttonShowWeatherForecast" text="Show Weather Forecast" maxWidth="Infinity"/>
+                                <Button fx:id="buttonShowAirPollution" text="Show Air Pollution" maxWidth="Infinity"/>
+                                <Button fx:id="buttonShowAirPollutionForecast" text="Show Air Pollution Forecast" maxWidth="Infinity"/>
+                            </children>
+                        </VBox>
+                    </content>
+                </TitledPane>
+            </panes>
+        </Accordion>
     </left>
+    <right>
+    </right>
 </BorderPane>
