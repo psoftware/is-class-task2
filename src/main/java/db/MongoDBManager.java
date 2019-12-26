@@ -61,7 +61,7 @@ public class MongoDBManager {
                 Document bsonCoordinates = (Document)bsonCity.get("coordinates");
                 List<Double> coords = (List<Double>)bsonCoordinates.get("coordinates");
 
-                City newCity = new City(country, city, new City.Coords(coords.get(0), coords.get(0)));
+                City newCity = new City(country, city, new City.Coords(coords.get(0), coords.get(1)));
                 resultList.add(newCity);
             }
         } finally {
