@@ -1,6 +1,7 @@
 package main.java.gui;
 
 import com.sothawo.mapjfx.*;
+import com.sothawo.mapjfx.event.MarkerEvent;
 import javafx.animation.Transition;
 import javafx.beans.binding.Bindings;
 import javafx.event.EventHandler;
@@ -86,6 +87,10 @@ public class Task2GUIController {
 
     private ArrayList<City> locations;
 
+    private ArrayList<Marker> markers = new ArrayList<>();
+
+    private ArrayList<MapLabel> labels = new ArrayList<>();
+
     private static final int ZOOM_DEFAULT = 4;
 
     private static final Coordinate coordDefault = new Coordinate(41.0, 16.0);
@@ -96,7 +101,7 @@ public class Task2GUIController {
 
     public void initMapAndControls(Projection projection) {
         // set the custom css file for the MapView
-        //mapView.setCustomMapviewCssURL(getClass().getResource("/custom_mapview.css"));
+        mapView.setCustomMapviewCssURL(getClass().getResource("/custom_mapview.css"));
 
         // bind the map's center and zoom properties to the corresponding labels and format them
         //labelCenter.textProperty().bind(Bindings.format("Center: %s", mapView.centerProperty()));
@@ -118,10 +123,21 @@ public class Task2GUIController {
 
         buttonFilter.setOnAction((event) -> searchLocation());
 
+        for (City c : locations) {
+            Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
+            Marker marker = (Marker) new Marker(getClass().getResource("/Map-Marker.png"), 0, 0).setPosition(coords)
+                    .setVisible(true).setCssClass("blue-marker");
+            MapLabel label = new MapLabel(c.getCity()).setPosition(coords).setVisible(false);
+            markers.add(marker);
+            labels.add(label);
+            marker.attachLabel(label);
+            mapView.addMarker(marker);
         }
+    }
 
         private void searchLocation(){
             // Button was clicked, close Filters, fetch correct locations and open Locations
+
             locationButtons.getChildren().clear();
             leftControls.setExpandedPane(paneLocations);
             String country = textCountry.getText();
@@ -137,10 +153,17 @@ public class Task2GUIController {
         }
 
         private void centerMapToCity(City c){
+            //removing old marker
+            for (Marker m : markers) {
+                m.setVisible(false);
+            }
             leftControls.setExpandedPane(paneActions);
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
             mapView.setCenter(coords).animationDurationProperty().set(1000);
-            System.out.println(coords);
+            for ( Marker m : markers) {
+                if (m.getPosition().equals(coords))
+                    m.setVisible(true);
+            }
         }
 
         // add the markers to the map - they are still invisible
