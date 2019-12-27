@@ -9,6 +9,8 @@ import main.java.fetch.FetchAdapter;
 import org.bson.Document;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,10 +110,20 @@ public class MongoDBManager {
         database.getCollection("users").createIndex(new Document("username", 1), new IndexOptions().unique(true));
     }
 
+    public void testMeasureImport(City city) throws IOException {
+        for(int i=0; i<15; i++)
+            FetchAdapter.getInstance()
+                    .fetchPollutionData(database.getCollection("measures"), city, LocalDate.now().minusDays(5+i));
+    }
+
+    public void loadMeasure(LocalDateTime startDate, LocalDateTime endDate ) {
+
+    }
+
     public void dropAllCollections() {
         database.getCollection("users").drop();
         database.getCollection("locations").drop();
-        database.getCollection("measurements").drop();
+        database.getCollection("measures").drop();
     }
 
     public static void main(String[] args) throws IOException {
@@ -148,6 +160,10 @@ public class MongoDBManager {
             System.out.println("check 2: " + ((resultUser == null) ? "ok" : "not ok"));
             resultUser = MongoDBManager.getInstance().getUserWithPassword("utente-e", "password");
             System.out.println("check 3: " + ((resultUser.equals(eUser)) ? "ok" : "not ok"));
+
+            // try loading pollution measures
+            City cityRome = new City("IT", "Roma", new City.Coords(41.902782, 12.4963));
+            MongoDBManager.getInstance().testMeasureImport(cityRome);
 
         } catch (Exception e) {
             e.printStackTrace();

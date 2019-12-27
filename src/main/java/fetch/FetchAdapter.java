@@ -1,5 +1,7 @@
 package main.java.fetch;
 
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.UpdateOptions;
 import main.java.City;
 import org.bson.Document;
 import org.bson.json.JsonMode;
@@ -8,8 +10,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.*;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 public class FetchAdapter {
@@ -96,9 +100,22 @@ public class FetchAdapter {
         return fetchWeatherData(city, jsonDoc, "weatherForecast");
     }
 
-    public Document fetchPollutionData(City city, LocalDate day) throws IOException {
+    private LocalDateTime[] getWeekPeriod(LocalDate date) {
+        return getWeekPeriod(LocalDateTime.of(date, LocalTime.of(0,0)));
+    }
+
+    private LocalDateTime[] getWeekPeriod(LocalDateTime datetime) {
+        return new LocalDateTime[]{ datetime.with(DayOfWeek.MONDAY).withHour(0).withMinute(0).withSecond(0),
+                datetime.with(DayOfWeek.SUNDAY).withHour(23).withMinute(59).withSecond(59)};
+    }
+
+    public void fetchPollutionData(MongoCollection<Document> collection, City city, LocalDate day) throws IOException {
         JSONObject jsonDoc = OpenAQFetcher.getInstance().getPollutionMeasurements(city.getCountry(), city.getCity(),
-                        day.atTime(0,0), day.atTime(23,59));
+                day.atTime(0,0), day.atTime(23,59));
+
+        LocalDateTime[] weekrange = getWeekPeriod(day);
+        LocalDateTime weekStart = weekrange[0];
+        LocalDateTime weekEnd = weekrange[1];
 
         // Map<SensorLocation, <Datetime, List<Measures>>>
         HashMap<String, HashMap<LocalDateTime, List<Document>>> locationToDateMeasureMap
@@ -140,16 +157,26 @@ public class FetchAdapter {
             }
         }
 
-        // Create BSON Document
-        Document mongoDoc = new Document();
-        mongoDoc.append("country",city.getCountry()).append("city", city.getCity())
-                .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
-                .append("enabled", false)
-                .append("periodStart", day.toString()) // TODO: implement per week documents
-                .append("periodEnd", day.toString())
-                .append("pollutionMeasurements", finalReadingList);
+        Document updatedoc = new Document()
+                .append("$setOnInsert", new Document()
+                        .append("country",city.getCountry()).append("city", city.getCity())
+                        .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
+                        .append("periodStart", weekStart.toString())
+                        .append("periodEnd", weekEnd.toString())
+                        .append("enabled", true))  // TODO: Implement city enabling
+                .append("$push", new Document()
+                        .append("pollutionMeasurements", new Document("$each", finalReadingList)));
 
-        return mongoDoc;
+        // Create BSON Document
+        Document query = new Document();
+        query.append("country",city.getCountry()).append("city", city.getCity())
+                .append("periodStart", weekStart.toString())
+                .append("periodEnd", weekEnd.toString());
+
+        // Update or insert (upsert) collection on MongoDB
+        System.out.println(query.toJson());
+        System.out.println(updatedoc.toJson());
+        collection.updateOne(query, updatedoc, new UpdateOptions().upsert(true));
     }
 
     // Use this method to generate city list to batch on geocode.xyz
@@ -259,9 +286,9 @@ public class FetchAdapter {
             mongoDoc = FetchAdapter.getInstance().fetchForecastData(cityRome);
             System.out.println(mongoDoc.toJson(jsonWriterSettings));
 
-            System.out.println("Test 3 (fetchPollutionData):");
-            mongoDoc = FetchAdapter.getInstance().fetchPollutionData(cityRome, LocalDate.now().minusDays(2));
-            System.out.println(mongoDoc.toJson(jsonWriterSettings));
+            //System.out.println("Test 3 (fetchPollutionData):");
+            //mongoDoc = FetchAdapter.getInstance().fetchPollutionData(cityRome, LocalDate.now().minusDays(2));
+            //System.out.println(mongoDoc.toJson(jsonWriterSettings));
 
             System.out.println("Test 4 (fetchAllCities):");
             List<Document> cityList = FetchAdapter.getInstance().fetchAllCities();
