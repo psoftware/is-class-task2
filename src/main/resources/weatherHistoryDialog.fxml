@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane
+        gridLinesVisible="true" maxHeight="-Infinity" maxWidth="-Infinity"
+        minHeight="-Infinity" minWidth="-Infinity"
+        prefHeight="400.0" prefWidth="600.0"
+        xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8"
+        fx:controller="main.java.gui.SimpleDialog$WeatherHistoryDialog"
+        >
+    <children>
+        <Label text="Day1:" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <Label text="Day2:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+        <Label text="Day3:" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+        <Label text="Day4:" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+        <Label text="Day5:" GridPane.columnIndex="5" GridPane.rowIndex="0" />
+        <Label text="Day6:" GridPane.columnIndex="6" GridPane.rowIndex="0" />
+        <Label text="Day7:" GridPane.columnIndex="7" GridPane.rowIndex="0" />
+
+        <Label text="Sky:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <Label text="Precipitation Intensity:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <Label text="Precipitation Probability:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+        <Label text="Apparent Temperature:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+        <Label text="Temperature:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+        <Label text="Dew Point:" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+        <Label text="Humidity:" GridPane.columnIndex="0" GridPane.rowIndex="7" />
+        <Label text="Pressure:" GridPane.columnIndex="0" GridPane.rowIndex="8" />
+        <Label text="Wind Speed:" GridPane.columnIndex="0" GridPane.rowIndex="9" />
+        <Label text="Wind Gust:" GridPane.columnIndex="0" GridPane.rowIndex="10" />
+        <Label text="Wind Bearing:" GridPane.columnIndex="0" GridPane.rowIndex="11" />
+        <Label text="Cloud Cover:" GridPane.columnIndex="0" GridPane.rowIndex="12" />
+        <Label text="UV Index:" GridPane.columnIndex="0" GridPane.rowIndex="13" />
+        <Label text="Visibility:" GridPane.columnIndex="0" GridPane.rowIndex="14" />
+        <Label text="Ozone:" GridPane.columnIndex="0" GridPane.rowIndex="15" />
+    </children>
+</GridPane>

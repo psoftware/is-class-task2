@@ -1,12 +1,15 @@
 package main.java.gui;
 
 import javafx.application.Platform;
-import javafx.geometry.Insets;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
-import java.time.LocalDate;
-import java.util.Optional;
+import java.io.IOException;
 
 
 public abstract class SimpleDialog<T> extends Dialog<T> {
@@ -15,10 +18,10 @@ public abstract class SimpleDialog<T> extends Dialog<T> {
         this.setTitle(title);
         this.setHeaderText(header);
 
-        // Set the button types.
+        //Set the button types.
         ButtonType confirmButtonType = new ButtonType("Confirm", ButtonBar.ButtonData.OK_DONE);
-        this.getDialogPane().getButtonTypes().addAll(confirmButtonType, ButtonType.CANCEL);
-
+        this.getDialogPane().getButtonTypes().addAll(confirmButtonType);
+/*
         // Create the username and password labels and fields.
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -28,18 +31,14 @@ public abstract class SimpleDialog<T> extends Dialog<T> {
         this.addComponents(grid);
 
         this.getDialogPane().setContent(grid);
-
+*/
         // Convert the result to a username-password-pair when the login button is clicked.
-        this.setResultConverter(dialogButton -> {
-            if (dialogButton == confirmButtonType)
-                return this.getValue();
-            return null;
-        });
+        this.setResultConverter(dialogButton -> null);
     }
 
     public abstract void addComponents(GridPane grid);
     public abstract T getValue();
-
+/*
     public static class MarkDialog extends SimpleDialog<Integer> {
         private Spinner<Integer> markspinner;
 
@@ -97,6 +96,37 @@ public abstract class SimpleDialog<T> extends Dialog<T> {
             DateDialog dialog = new DateDialog();
             Optional<LocalDate> result = dialog.showAndWait();
             return result.orElse(null);
+        }
+    }
+*/
+    public static class WeatherHistoryDialog extends SimpleDialog<Integer> {
+        public WeatherHistoryDialog() {
+            super("Weather History Dialog", "Show Historical Weather Data");
+        }
+
+        public void showWeatherHistory(){
+            FXMLLoader loader = new FXMLLoader();
+            try {
+                Parent root = loader.load(WeatherHistoryDialog.class.getResource("/weatherHistoryDialog.fxml"));
+                Stage stage = new Stage();
+                // now that we want to open dialog, we must use this line:
+                stage.initModality(Modality.APPLICATION_MODAL);
+                stage.setScene(new Scene(root));
+                stage.setTitle(this.getTitle());
+                stage.show();
+            } catch (IOException e) {
+                System.out.println(e.toString());
+            }
+        }
+
+        @Override
+        public void addComponents(GridPane grid) {
+
+        }
+
+        @Override
+        public Integer getValue() {
+            return null;
         }
     }
 

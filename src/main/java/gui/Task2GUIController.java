@@ -16,6 +16,7 @@ import main.java.City;
 import main.java.db.MongoDBManager;
 
 import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Task2GUIController {
@@ -122,17 +123,28 @@ public class Task2GUIController {
         mapView.setCenter(coordDefault);
 
         buttonFilter.setOnAction((event) -> searchLocation());
+        buttonShowWeatherHistory.setOnAction((event) -> showWeatherHistory());
+       // buttonShowWeatherForecast.setOnAction((event) -> showWeatherForecast());
+       // buttonShowAirPollution.setOnAction((event) -> showAirPollution());
+       // buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
 
         for (City c : locations) {
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
-            Marker marker = (Marker) new Marker(getClass().getResource("/Map-Marker.png"), 0, 0).setPosition(coords)
-                    .setVisible(true).setCssClass("blue-marker");
-            MapLabel label = new MapLabel(c.getCity()).setPosition(coords).setVisible(false);
+            Marker marker = new Marker(getClass().getResource("/Map-Marker.png"), 0, 0).setPosition(coords)
+                    .setVisible(false);
+            MapLabel label = new MapLabel(c.getCity(), 0, 35).setPosition(coords).setCssClass("label");
             markers.add(marker);
             labels.add(label);
             marker.attachLabel(label);
             mapView.addMarker(marker);
         }
+
+        mapView.addEventHandler(MapViewEvent.MAP_CLICKED, event -> {
+            event.consume();
+            final Coordinate newPosition = event.getCoordinate();
+            City closestCity = getClosestCity(newPosition);
+            centerMapToCity(closestCity);
+        });
     }
 
         private void searchLocation(){
@@ -164,6 +176,27 @@ public class Task2GUIController {
                 if (m.getPosition().equals(coords))
                     m.setVisible(true);
             }
+        }
+
+        private City getClosestCity(Coordinate clickPosition){
+            double minDistance = Double.POSITIVE_INFINITY;
+            City closestCity = null;
+            for (City location: locations){
+                double distance = Math.sqrt(
+                        Math.pow((clickPosition.getLatitude() - location.getCoords().lat),2) +
+                        Math.pow((clickPosition.getLongitude() - location.getCoords().lon),2)
+                );
+                if(distance < minDistance){
+                    minDistance = distance;
+                    closestCity = location;
+                }
+            }
+            return closestCity;
+        }
+
+        private void showWeatherHistory() {
+            SimpleDialog.WeatherHistoryDialog whd = new SimpleDialog.WeatherHistoryDialog();
+            whd.showWeatherHistory();
         }
 
         // add the markers to the map - they are still invisible
