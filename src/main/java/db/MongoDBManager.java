@@ -1,12 +1,21 @@
 package main.java.db;
 
+import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.*;
 import com.mongodb.client.model.IndexOptions;
+import io.github.cbartosiak.bson.codecs.jsr310.duration.DurationAsDecimal128Codec;
+import io.github.cbartosiak.bson.codecs.jsr310.localdate.LocalDateAsDateTimeCodec;
+import io.github.cbartosiak.bson.codecs.jsr310.localdate.LocalDateAsDocumentCodec;
+import io.github.cbartosiak.bson.codecs.jsr310.localdatetime.LocalDateTimeAsDateTimeCodec;
+import io.github.cbartosiak.bson.codecs.jsr310.localdatetime.LocalDateTimeAsDocumentCodec;
 import main.java.City;
 import main.java.User;
 import main.java.fetch.FetchAdapter;
+import main.java.fetch.FetchUtils;
 import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -22,13 +31,20 @@ public class MongoDBManager {
 
     private final static String MONGO_URL = "mongodb://localhost:27017";
     private final static String DATABASE_NAME = "task2";
+    public final CodecRegistry CODEC_REGISTRY;
 
     private MongoClient mongoClient;
     private MongoDatabase database;
 
     private MongoDBManager() {
         mongoClient = MongoClients.create(MONGO_URL);
-        database = mongoClient.getDatabase(DATABASE_NAME);
+        CODEC_REGISTRY = CodecRegistries.fromRegistries(
+                MongoClientSettings.getDefaultCodecRegistry(),
+                CodecRegistries.fromCodecs(new DurationAsDecimal128Codec()),
+                CodecRegistries.fromCodecs(new LocalDateAsDateTimeCodec()),
+                CodecRegistries.fromCodecs(new LocalDateTimeAsDateTimeCodec())
+        );
+        database = mongoClient.getDatabase(DATABASE_NAME).withCodecRegistry(CODEC_REGISTRY);
     }
 
     void close() {

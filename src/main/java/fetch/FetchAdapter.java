@@ -69,7 +69,7 @@ public class FetchAdapter {
 
             LocalDateTime hourdatetime =
                     LocalDateTime.ofInstant(Instant.ofEpochSecond(hourdata.getLong("time")), timezone.toZoneId());
-            Document hourDoc = new Document("datetime", hourdatetime.toString())
+            Document hourDoc = new Document("datetime", hourdatetime)
                     .append("measurements", mongoHourMeasureList);
 
             mongoHourlyList.add(hourDoc);
@@ -82,20 +82,20 @@ public class FetchAdapter {
                 .append("$setOnInsert", new Document()
                         .append("country",city.getCountry()).append("city", city.getCity())
                         .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
-                        .append("periodStart", weekStart.toString())
-                        .append("periodEnd", weekEnd.toString())
+                        .append("periodStart", weekStart)
+                        .append("periodEnd", weekEnd)
                         .append("enabled", true))  // TODO: Implement city enabling
                 .append("$push", new Document()
                         .append(arrayname, new Document("$each", mongoHourlyList)));
 
         Document query = new Document();
         query.append("country",city.getCountry()).append("city", city.getCity())
-                .append("periodStart", weekStart.toString())
-                .append("periodEnd", weekEnd.toString());
+                .append("periodStart", weekStart)
+                .append("periodEnd", weekEnd);
 
         // Update or insert (upsert) collection on MongoDB
-        System.out.println(query.toJson());
-        System.out.println(updatedoc.toJson());
+        //System.out.println(query.toJson());
+        //System.out.println(updatedoc.toJson());
         collection.updateOne(query, updatedoc, new UpdateOptions().upsert(true));
     }
 
@@ -163,7 +163,7 @@ public class FetchAdapter {
             String location = locationEntry.getKey();
             for (Map.Entry<LocalDateTime, List<Document>> dateEntry : locationEntry.getValue().entrySet()) {
                 LocalDateTime datetime = dateEntry.getKey();
-                Document hourdoc = new Document("location", location).append("datetime", datetime.toString())
+                Document hourdoc = new Document("location", location).append("datetime", datetime)
                         .append("measurements", dateEntry.getValue());
                 finalReadingList.add(hourdoc);
             }
@@ -173,8 +173,8 @@ public class FetchAdapter {
                 .append("$setOnInsert", new Document()
                         .append("country",city.getCountry()).append("city", city.getCity())
                         .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
-                        .append("periodStart", weekStart.toString())
-                        .append("periodEnd", weekEnd.toString())
+                        .append("periodStart", weekStart)
+                        .append("periodEnd", weekEnd)
                         .append("enabled", true))  // TODO: Implement city enabling
                 .append("$push", new Document()
                         .append("pollutionMeasurements", new Document("$each", finalReadingList)));
@@ -182,12 +182,12 @@ public class FetchAdapter {
         // Create BSON Document
         Document query = new Document();
         query.append("country",city.getCountry()).append("city", city.getCity())
-                .append("periodStart", weekStart.toString())
-                .append("periodEnd", weekEnd.toString());
+                .append("periodStart", weekStart)
+                .append("periodEnd", weekEnd);
 
         // Update or insert (upsert) collection on MongoDB
-        System.out.println(query.toJson());
-        System.out.println(updatedoc.toJson());
+        //System.out.println(query.toJson());
+        //System.out.println(updatedoc.toJson());
         collection.updateOne(query, updatedoc, new UpdateOptions().upsert(true));
     }
 
