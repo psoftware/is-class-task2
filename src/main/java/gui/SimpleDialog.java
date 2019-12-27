@@ -99,20 +99,81 @@ public abstract class SimpleDialog<T> extends Dialog<T> {
         }
     }
 */
-    public static class WeatherHistoryDialog extends SimpleDialog<Integer> {
-        public WeatherHistoryDialog() {
-            super("Weather History Dialog", "Show Historical Weather Data");
+    public static class WeatherDialog extends SimpleDialog<Integer> {
+        public WeatherDialog() {
+            super("", "");
         }
 
         public void showWeatherHistory(){
             FXMLLoader loader = new FXMLLoader();
             try {
-                Parent root = loader.load(WeatherHistoryDialog.class.getResource("/weatherHistoryDialog.fxml"));
+                Parent root = loader.load(WeatherDialog.class.getResource("/weatherDialog.fxml"));
                 Stage stage = new Stage();
                 // now that we want to open dialog, we must use this line:
                 stage.initModality(Modality.APPLICATION_MODAL);
                 stage.setScene(new Scene(root));
-                stage.setTitle(this.getTitle());
+                stage.setTitle("Weather History Dialog");
+                stage.show();
+            } catch (IOException e) {
+                System.out.println(e.toString());
+            }
+        }
+
+    public void showWeatherForecast(){
+        FXMLLoader loader = new FXMLLoader();
+        try {
+            Parent root = loader.load(WeatherDialog.class.getResource("/weatherDialog.fxml"));
+            Stage stage = new Stage();
+            // now that we want to open dialog, we must use this line:
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.setTitle("Weather Forecast Dialog");
+            stage.show();
+        } catch (IOException e) {
+            System.out.println(e.toString());
+        }
+    }
+
+        @Override
+        public void addComponents(GridPane grid) {
+
+        }
+
+        @Override
+        public Integer getValue() {
+            return null;
+        }
+    }
+
+    public static class PollutionDialog extends SimpleDialog<Integer> {
+        public PollutionDialog() {
+            super("", "");
+        }
+
+        public void showPollution(){
+            FXMLLoader loader = new FXMLLoader();
+            try {
+                Parent root = loader.load(WeatherDialog.class.getResource("/pollutionDialog.fxml"));
+                Stage stage = new Stage();
+                // now that we want to open dialog, we must use this line:
+                stage.initModality(Modality.APPLICATION_MODAL);
+                stage.setScene(new Scene(root));
+                stage.setTitle("Air Pollution Dialog");
+                stage.show();
+            } catch (IOException e) {
+                System.out.println(e.toString());
+            }
+        }
+
+        public void showPollutionForecast(){
+            FXMLLoader loader = new FXMLLoader();
+            try {
+                Parent root = loader.load(WeatherDialog.class.getResource("/pollutionDialog.fxml"));
+                Stage stage = new Stage();
+                // now that we want to open dialog, we must use this line:
+                stage.initModality(Modality.APPLICATION_MODAL);
+                stage.setScene(new Scene(root));
+                stage.setTitle("Air Pollution Forecast Dialog");
                 stage.show();
             } catch (IOException e) {
                 System.out.println(e.toString());

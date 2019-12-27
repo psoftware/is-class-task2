@@ -124,9 +124,9 @@ public class Task2GUIController {
 
         buttonFilter.setOnAction((event) -> searchLocation());
         buttonShowWeatherHistory.setOnAction((event) -> showWeatherHistory());
-       // buttonShowWeatherForecast.setOnAction((event) -> showWeatherForecast());
-       // buttonShowAirPollution.setOnAction((event) -> showAirPollution());
-       // buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
+        buttonShowWeatherForecast.setOnAction((event) -> showWeatherForecast());
+        buttonShowAirPollution.setOnAction((event) -> showAirPollution());
+        buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
 
         for (City c : locations) {
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
@@ -195,8 +195,23 @@ public class Task2GUIController {
         }
 
         private void showWeatherHistory() {
-            SimpleDialog.WeatherHistoryDialog whd = new SimpleDialog.WeatherHistoryDialog();
-            whd.showWeatherHistory();
+            SimpleDialog.WeatherDialog wd = new SimpleDialog.WeatherDialog();
+            wd.showWeatherHistory();
+        }
+
+        private void showWeatherForecast() {
+            SimpleDialog.WeatherDialog wd = new SimpleDialog.WeatherDialog();
+            wd.showWeatherForecast();
+        }
+
+        private void showAirPollution() {
+            SimpleDialog.PollutionDialog pd = new SimpleDialog.PollutionDialog();
+            pd.showPollution();
+        }
+
+        private void showAirPollutionForecast() {
+            SimpleDialog.PollutionDialog pd = new SimpleDialog.PollutionDialog();
+            pd.showPollutionForecast();
         }
 
         // add the markers to the map - they are still invisible

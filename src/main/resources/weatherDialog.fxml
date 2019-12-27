@@ -11,7 +11,7 @@
         minHeight="-Infinity" minWidth="-Infinity"
         prefHeight="400.0" prefWidth="600.0"
         xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8"
-        fx:controller="main.java.gui.SimpleDialog$WeatherHistoryDialog"
+        fx:controller="main.java.gui.SimpleDialog$WeatherDialog"
         >
     <children>
         <Label text="Day1:" GridPane.columnIndex="1" GridPane.rowIndex="0" />
