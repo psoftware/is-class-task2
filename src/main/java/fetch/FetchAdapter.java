@@ -10,10 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.*;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.*;
 
 public class FetchAdapter {
@@ -53,6 +50,7 @@ public class FetchAdapter {
         LocalDateTime weekEnd = weekrange[1];
 
         List<Document> mongoHourlyList = new ArrayList<>();
+        TimeZone timezone = TimeZone.getTimeZone(jsonDoc.getString("timezone"));
 
         JSONArray jsonHourlyList = jsonDoc.getJSONObject("hourly").getJSONArray("data");
         for(int i=0; i<jsonHourlyList.length(); i++) {
@@ -69,7 +67,9 @@ public class FetchAdapter {
                             DarkSkyFetcher.MEASURE_UNITS.get(attributename)));
                 }
 
-            Document hourDoc = new Document("datetime", hourdata.getLong("time"))
+            LocalDateTime hourdatetime =
+                    LocalDateTime.ofInstant(Instant.ofEpochSecond(hourdata.getLong("time")), timezone.toZoneId());
+            Document hourDoc = new Document("datetime", hourdatetime.toString())
                     .append("measurements", mongoHourMeasureList);
 
             mongoHourlyList.add(hourDoc);
