@@ -45,7 +45,7 @@ public class FetchAdapter {
 
     private void fetchWeatherData(MongoCollection<Document> collection, City city, LocalDate day,
                                       JSONObject jsonDoc, String arrayname) throws IOException {
-        LocalDateTime[] weekrange = getWeekPeriod(day);
+        LocalDateTime[] weekrange = FetchUtils.getWeekPeriod(day);
         LocalDateTime weekStart = weekrange[0];
         LocalDateTime weekEnd = weekrange[1];
 
@@ -94,8 +94,8 @@ public class FetchAdapter {
                 .append("periodEnd", weekEnd);
 
         // Update or insert (upsert) collection on MongoDB
-        //System.out.println(query.toJson());
-        //System.out.println(updatedoc.toJson());
+        System.out.println(FetchUtils.toJson(query));
+        System.out.println(FetchUtils.toJson(updatedoc));
         collection.updateOne(query, updatedoc, new UpdateOptions().upsert(true));
     }
 
@@ -112,20 +112,11 @@ public class FetchAdapter {
         fetchWeatherData(collection, city, LocalDate.now(), jsonDoc, "weatherForecast");
     }
 
-    private LocalDateTime[] getWeekPeriod(LocalDate date) {
-        return getWeekPeriod(LocalDateTime.of(date, LocalTime.of(0,0)));
-    }
-
-    private LocalDateTime[] getWeekPeriod(LocalDateTime datetime) {
-        return new LocalDateTime[]{ datetime.with(DayOfWeek.MONDAY).withHour(0).withMinute(0).withSecond(0),
-                datetime.with(DayOfWeek.SUNDAY).withHour(23).withMinute(59).withSecond(59)};
-    }
-
     public void fetchPollutionData(MongoCollection<Document> collection, City city, LocalDate day) throws IOException {
         JSONObject jsonDoc = OpenAQFetcher.getInstance().getPollutionMeasurements(city.getCountry(), city.getCity(),
                 day.atTime(0,0), day.atTime(23,59));
 
-        LocalDateTime[] weekrange = getWeekPeriod(day);
+        LocalDateTime[] weekrange = FetchUtils.getWeekPeriod(day);
         LocalDateTime weekStart = weekrange[0];
         LocalDateTime weekEnd = weekrange[1];
 
@@ -186,8 +177,8 @@ public class FetchAdapter {
                 .append("periodEnd", weekEnd);
 
         // Update or insert (upsert) collection on MongoDB
-        //System.out.println(query.toJson());
-        //System.out.println(updatedoc.toJson());
+        System.out.println(FetchUtils.toJson(query));
+        System.out.println(FetchUtils.toJson(updatedoc));
         collection.updateOne(query, updatedoc, new UpdateOptions().upsert(true));
     }
 

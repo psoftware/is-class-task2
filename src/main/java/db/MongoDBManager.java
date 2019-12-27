@@ -24,26 +24,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MongoDBManager {
+    public final static CodecRegistry CODEC_REGISTRY = CodecRegistries.fromRegistries(
+            MongoClientSettings.getDefaultCodecRegistry(),
+            CodecRegistries.fromCodecs(new DurationAsDecimal128Codec()),
+            CodecRegistries.fromCodecs(new LocalDateAsDateTimeCodec()),
+            CodecRegistries.fromCodecs(new LocalDateTimeAsDateTimeCodec())
+    );
+
+    private final static String MONGO_URL = "mongodb://localhost:27017";
+    private final static String DATABASE_NAME = "task2";
+
     private static MongoDBManager INSTANCE = new MongoDBManager();
     public static MongoDBManager getInstance() {
         return INSTANCE;
     }
-
-    private final static String MONGO_URL = "mongodb://localhost:27017";
-    private final static String DATABASE_NAME = "task2";
-    public final CodecRegistry CODEC_REGISTRY;
 
     private MongoClient mongoClient;
     private MongoDatabase database;
 
     private MongoDBManager() {
         mongoClient = MongoClients.create(MONGO_URL);
-        CODEC_REGISTRY = CodecRegistries.fromRegistries(
-                MongoClientSettings.getDefaultCodecRegistry(),
-                CodecRegistries.fromCodecs(new DurationAsDecimal128Codec()),
-                CodecRegistries.fromCodecs(new LocalDateAsDateTimeCodec()),
-                CodecRegistries.fromCodecs(new LocalDateTimeAsDateTimeCodec())
-        );
         database = mongoClient.getDatabase(DATABASE_NAME).withCodecRegistry(CODEC_REGISTRY);
     }
 
