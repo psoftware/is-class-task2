@@ -111,9 +111,14 @@ public class MongoDBManager {
     }
 
     public void testMeasureImport(City city) throws IOException {
-        for(int i=0; i<15; i++)
+        for(int i=0; i<15; i++) {
             FetchAdapter.getInstance()
-                    .fetchPollutionData(database.getCollection("measures"), city, LocalDate.now().minusDays(5+i));
+                    .fetchPollutionData(database.getCollection("measurespoll"), city, LocalDate.now().minusDays(5 + i));
+            FetchAdapter.getInstance()
+                    .fetchHistoricalData(database.getCollection("measureswpast"), city, LocalDate.now().minusDays(5 + i));
+        }
+
+        FetchAdapter.getInstance().fetchForecastData(database.getCollection("measureswfor"), city);
     }
 
     public void loadMeasure(LocalDateTime startDate, LocalDateTime endDate ) {
@@ -123,7 +128,9 @@ public class MongoDBManager {
     public void dropAllCollections() {
         database.getCollection("users").drop();
         database.getCollection("locations").drop();
-        database.getCollection("measures").drop();
+        database.getCollection("measurespoll").drop();
+        database.getCollection("measureswfor").drop();
+        database.getCollection("measureswpast").drop();
     }
 
     public static void main(String[] args) throws IOException {

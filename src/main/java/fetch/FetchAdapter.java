@@ -46,8 +46,12 @@ public class FetchAdapter {
         return new Document().append("name", name).append("value", measurement).append("unit", uom);
     }
 
-    private Document fetchWeatherData(City city, JSONObject jsonDoc, String arrayname) throws IOException {
-        // 2) Covert it into a MongoDB BSON document, formatted as required
+    private void fetchWeatherData(MongoCollection<Document> collection, City city, LocalDate day,
+                                      JSONObject jsonDoc, String arrayname) throws IOException {
+        LocalDateTime[] weekrange = getWeekPeriod(day);
+        LocalDateTime weekStart = weekrange[0];
+        LocalDateTime weekEnd = weekrange[1];
+
         List<Document> mongoHourlyList = new ArrayList<>();
 
         JSONArray jsonHourlyList = jsonDoc.getJSONObject("hourly").getJSONArray("data");
@@ -73,31 +77,39 @@ public class FetchAdapter {
 
         // TODO: we should check if target coordinates are not too far from response coordinates
 
-        // Create BSON Document
-        Document mongoDoc = new Document();
-        mongoDoc.append("country",city.getCountry()).append("city", city.getCity())
-                .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
-                .append("enabled", false)
-                .append("periodStart","22-12-19") // TODO: implement per week documents
-                .append("periodEnd","29-12-19")
-                .append(arrayname, mongoHourlyList);
+        // Create query and update BSON Documents
+        Document updatedoc = new Document()
+                .append("$setOnInsert", new Document()
+                        .append("country",city.getCountry()).append("city", city.getCity())
+                        .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
+                        .append("periodStart", weekStart.toString())
+                        .append("periodEnd", weekEnd.toString())
+                        .append("enabled", true))  // TODO: Implement city enabling
+                .append("$push", new Document()
+                        .append(arrayname, new Document("$each", mongoHourlyList)));
 
+        Document query = new Document();
+        query.append("country",city.getCountry()).append("city", city.getCity())
+                .append("periodStart", weekStart.toString())
+                .append("periodEnd", weekEnd.toString());
 
-        // 3) Submit into database without duplicates
-        //mongoDoc.toJson(JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build());
-        return mongoDoc;
+        // Update or insert (upsert) collection on MongoDB
+        System.out.println(query.toJson());
+        System.out.println(updatedoc.toJson());
+        collection.updateOne(query, updatedoc, new UpdateOptions().upsert(true));
     }
 
-    public Document fetchHistoricalData(LocalDate day, City city) throws IOException {
+    public void fetchHistoricalData(MongoCollection<Document> collection, City city, LocalDate day) throws IOException {
         // 1) Get hourly weather data for specified day
         JSONObject jsonDoc = DarkSkyFetcher.getInstance().getHistoricalWeather(city.getCoords().lat, city.getCoords().lat, day);
-        return fetchWeatherData(city, jsonDoc, "weatherCondition");
+        fetchWeatherData(collection, city, day, jsonDoc, "weatherCondition");
     }
 
-    public Document fetchForecastData(City city) throws IOException {
+    public void fetchForecastData(MongoCollection<Document> collection, City city) throws IOException {
         // 1) Get hourly weather data for specified day
+        //TODO: possible race condition on LocalDate.now() between api call and next method call
         JSONObject jsonDoc = DarkSkyFetcher.getInstance().getDailyForecast(city.getCoords().lat, city.getCoords().lat);
-        return fetchWeatherData(city, jsonDoc, "weatherForecast");
+        fetchWeatherData(collection, city, LocalDate.now(), jsonDoc, "weatherForecast");
     }
 
     private LocalDateTime[] getWeekPeriod(LocalDate date) {
@@ -278,13 +290,13 @@ public class FetchAdapter {
             City cityRome = new City("IT", "Roma", new City.Coords(41.902782, 12.4963));
 
             Document mongoDoc;
-            System.out.println("Test 1 (fetchHistoricalData):");
-            mongoDoc = FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1), cityRome);
-            System.out.println(mongoDoc.toJson(jsonWriterSettings));
+            //System.out.println("Test 1 (fetchHistoricalData):");
+            //mongoDoc = FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1), cityRome);
+            //System.out.println(mongoDoc.toJson(jsonWriterSettings));
 
-            System.out.println("Test 2 (fetchForecastData):");
-            mongoDoc = FetchAdapter.getInstance().fetchForecastData(cityRome);
-            System.out.println(mongoDoc.toJson(jsonWriterSettings));
+            //System.out.println("Test 2 (fetchForecastData):");
+            //mongoDoc = FetchAdapter.getInstance().fetchForecastData(cityRome);
+            //System.out.println(mongoDoc.toJson(jsonWriterSettings));
 
             //System.out.println("Test 3 (fetchPollutionData):");
             //mongoDoc = FetchAdapter.getInstance().fetchPollutionData(cityRome, LocalDate.now().minusDays(2));
