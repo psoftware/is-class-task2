@@ -42,7 +42,7 @@ public class DarkSkyFetcher {
         }
     };
 
-    private String apiKey = "6b9dd5758e3cb7d7d7eee127d30243f5";
+    private String apiKey = "";
 
     private static final boolean DEBUG_MODE = true;
 
