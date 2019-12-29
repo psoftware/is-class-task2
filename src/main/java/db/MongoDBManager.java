@@ -122,6 +122,27 @@ public class MongoDBManager {
         return newUser;
     }
 
+    public ArrayList<User> getUsersByStatus(int status ) {
+        MongoCollection<Document> collection = database.getCollection("users");
+        MongoCursor<Document> cursor = collection.find().cursor();
+        if(!cursor.hasNext())
+            return null; // No Users
+
+        ArrayList<User> userList = new ArrayList<>();
+        while(cursor.hasNext()) {
+            Document userDoc = cursor.next();
+            if (userDoc.getInteger("status").equals(status)) {
+                User newUser = new User(userDoc.getString("username"),
+                        userDoc.getString("name"),
+                        userDoc.getString("surname"),
+                        User.Status.values()[userDoc.getInteger("status")]);
+                userList.add(newUser);
+            }
+        }
+        return userList;
+
+    }
+
     private void createUserIndex() {
         database.getCollection("users").createIndex(new Document("username", 1), new IndexOptions().unique(true));
     }

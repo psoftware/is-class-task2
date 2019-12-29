@@ -1,6 +1,7 @@
 package main.java.gui;
 
 import javafx.application.Platform;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -8,11 +9,14 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import main.java.User;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 
 public abstract class SimpleDialog<T> extends Dialog<T> {
+
     public SimpleDialog(String title, String header) {
         // Create the custom dialog.
         this.setTitle(title);
@@ -38,158 +42,6 @@ public abstract class SimpleDialog<T> extends Dialog<T> {
 
     public abstract void addComponents(GridPane grid);
     public abstract T getValue();
-/*
-    public static class MarkDialog extends SimpleDialog<Integer> {
-        private Spinner<Integer> markspinner;
-
-        public MarkDialog() {
-            super("Mark Dialog", "Insert Mark");
-        }
-
-        public void addComponents(GridPane grid) {
-            markspinner = new Spinner<Integer>();
-            SpinnerValueFactory<Integer> valueFactory = //
-                    new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30, 18);
-            markspinner.setValueFactory(valueFactory);
-
-            // Request focus on the markspinner field by default.
-            Platform.runLater(markspinner::requestFocus);
-
-            grid.add(new Label("Mark:"), 0, 0);
-            grid.add(markspinner, 1, 0);
-        }
-
-        public Integer getValue() {
-            return markspinner.getValue();
-        }
-
-        public static Integer showDialog() {
-            MarkDialog dialog = new MarkDialog();
-            Optional<Integer> result = dialog.showAndWait();
-            return result.orElse(null);
-        }
-    }
-
-    public static class DateDialog extends SimpleDialog<LocalDate> {
-        private DatePicker datepicker;
-
-        public DateDialog() {
-            super("Date Dialog", "Insert Date");
-        }
-
-        public void addComponents(GridPane grid) {
-            datepicker = new DatePicker();
-            datepicker.setValue(LocalDate.now());
-
-            // Request focus on the markspinner field by default.
-            Platform.runLater(datepicker::requestFocus);
-
-            grid.add(new Label("Date:"), 0, 0);
-            grid.add(datepicker, 1, 0);
-        }
-
-        public LocalDate getValue() {
-            return datepicker.getValue();
-        }
-
-        public static LocalDate showDialog() {
-            DateDialog dialog = new DateDialog();
-            Optional<LocalDate> result = dialog.showAndWait();
-            return result.orElse(null);
-        }
-    }
-*/
-    public static class WeatherDialog extends SimpleDialog<Integer> {
-        public WeatherDialog() {
-            super("", "");
-        }
-
-        public void showWeatherHistory(){
-            FXMLLoader loader = new FXMLLoader();
-            try {
-                Parent root = loader.load(WeatherDialog.class.getResource("/weatherDialog.fxml"));
-                Stage stage = new Stage();
-                // now that we want to open dialog, we must use this line:
-                stage.initModality(Modality.APPLICATION_MODAL);
-                stage.setScene(new Scene(root));
-                stage.setTitle("Weather History Dialog");
-                stage.show();
-            } catch (IOException e) {
-                System.out.println(e.toString());
-            }
-        }
-
-    public void showWeatherForecast(){
-        FXMLLoader loader = new FXMLLoader();
-        try {
-            Parent root = loader.load(WeatherDialog.class.getResource("/weatherDialog.fxml"));
-            Stage stage = new Stage();
-            // now that we want to open dialog, we must use this line:
-            stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setScene(new Scene(root));
-            stage.setTitle("Weather Forecast Dialog");
-            stage.show();
-        } catch (IOException e) {
-            System.out.println(e.toString());
-        }
-    }
-
-        @Override
-        public void addComponents(GridPane grid) {
-
-        }
-
-        @Override
-        public Integer getValue() {
-            return null;
-        }
-    }
-
-    public static class PollutionDialog extends SimpleDialog<Integer> {
-        public PollutionDialog() {
-            super("", "");
-        }
-
-        public void showPollution(){
-            FXMLLoader loader = new FXMLLoader();
-            try {
-                Parent root = loader.load(WeatherDialog.class.getResource("/pollutionDialog.fxml"));
-                Stage stage = new Stage();
-                // now that we want to open dialog, we must use this line:
-                stage.initModality(Modality.APPLICATION_MODAL);
-                stage.setScene(new Scene(root));
-                stage.setTitle("Air Pollution Dialog");
-                stage.show();
-            } catch (IOException e) {
-                System.out.println(e.toString());
-            }
-        }
-
-        public void showPollutionForecast(){
-            FXMLLoader loader = new FXMLLoader();
-            try {
-                Parent root = loader.load(WeatherDialog.class.getResource("/pollutionDialog.fxml"));
-                Stage stage = new Stage();
-                // now that we want to open dialog, we must use this line:
-                stage.initModality(Modality.APPLICATION_MODAL);
-                stage.setScene(new Scene(root));
-                stage.setTitle("Air Pollution Forecast Dialog");
-                stage.show();
-            } catch (IOException e) {
-                System.out.println(e.toString());
-            }
-        }
-
-        @Override
-        public void addComponents(GridPane grid) {
-
-        }
-
-        @Override
-        public Integer getValue() {
-            return null;
-        }
-    }
 
     public static void showErrorDialog(String error) {
         Alert alert = new Alert(Alert.AlertType.ERROR);

@@ -21,7 +21,7 @@
                 </Menu>
                 <Menu mnemonicParsing="false" text="Users">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Enable / Disable User" />
+                        <MenuItem fx:id="enableDisableMenu" mnemonicParsing="false" text="Enable / Disable User" />
                         <MenuItem mnemonicParsing="false" text="Promote to / Demote from Admin" />
                     </items>
                 </Menu>
@@ -47,9 +47,9 @@
                         <VBox spacing="10.0">
                             <children>
                                 <Label fx:id="labelCountry" text="Country "/>
-                                <TextField fx:id="textCountry"></TextField>
+                                <TextField fx:id="textCountry"/>
                                 <Label fx:id="labelCity" text="City "/>
-                                <TextField fx:id="textCity"></TextField>
+                                <TextField fx:id="textCity"/>
                                 <Button fx:id="buttonFilter" text="Search" maxWidth="Infinity"/>
                             </children>
                         </VBox>

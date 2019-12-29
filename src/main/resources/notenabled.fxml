@@ -26,9 +26,9 @@
                         <VBox spacing="10.0">
                             <children>
                                 <Label fx:id="labelCountry" text="Country "/>
-                                <TextField fx:id="textCountry"></TextField>
+                                <TextField fx:id="textCountry"/>
                                 <Label fx:id="labelCity" text="City "/>
-                                <TextField fx:id="textCity"></TextField>
+                                <TextField fx:id="textCity"/>
                                 <Button fx:id="buttonFilter" text="Search" maxWidth="Infinity"/>
                             </children>
                         </VBox>

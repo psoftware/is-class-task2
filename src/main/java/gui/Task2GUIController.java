@@ -1,24 +1,22 @@
 package main.java.gui;
 
 import com.sothawo.mapjfx.*;
-import com.sothawo.mapjfx.event.MarkerEvent;
-import javafx.animation.Transition;
-import javafx.beans.binding.Bindings;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import main.java.City;
 import main.java.User;
 import main.java.db.MongoDBManager;
 
-import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.lang.String;
 
 public class Task2GUIController {
     @FXML
@@ -87,6 +85,9 @@ public class Task2GUIController {
     @FXML
     private Button buttonShowAirPollutionForecast;
 
+    @FXML
+    private MenuItem enableDisableMenu;
+
     private ArrayList<City> locations;
 
     private ArrayList<Marker> markers = new ArrayList<>();
@@ -125,12 +126,16 @@ public class Task2GUIController {
 
         leftControls.setExpandedPane(paneFilters);
 
+        // button events
         buttonFilter.setOnAction((event) -> searchLocation());
         buttonShowWeatherHistory.setOnAction((event) -> showWeatherHistory());
         buttonShowWeatherForecast.setOnAction((event) -> showWeatherForecast());
         buttonShowAirPollution.setOnAction((event) -> showAirPollution());
         if(!user.getStatus().equals(User.Status.NOTENABLED))
             buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
+
+        // menu events
+        enableDisableMenu.setOnAction((event -> enableDisableUsers()));
 
         for (City c : locations) {
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
@@ -156,7 +161,7 @@ public class Task2GUIController {
 
             locationButtons.getChildren().clear();
             leftControls.setExpandedPane(paneLocations);
-            String country = textCountry.getText();
+            java.lang.String country = textCountry.getText();
             String city = textCity.getText();
             for (City c: locations) {
                 if(country.equals(c.getCountry()) || country.equals(""))
@@ -199,23 +204,85 @@ public class Task2GUIController {
         }
 
         private void showWeatherHistory() {
-            SimpleDialog.WeatherDialog wd = new SimpleDialog.WeatherDialog();
-            wd.showWeatherHistory();
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("WeatherDialog.fxml"));
+            Parent root = null;
+            try {
+                root = fxmlLoader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            PopupController pc = fxmlLoader.getController();
+            pc.showWeatherHistory();
+            setupStage(root,"Weather History");
         }
 
         private void showWeatherForecast() {
-            SimpleDialog.WeatherDialog wd = new SimpleDialog.WeatherDialog();
-            wd.showWeatherForecast();
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("weatherDialog.fxml"));
+            Parent root = null;
+            try {
+                root = fxmlLoader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            PopupController pc = fxmlLoader.getController();
+            pc.showWeatherForecast();
+            setupStage(root,"Weather Forecast");
         }
 
         private void showAirPollution() {
-            SimpleDialog.PollutionDialog pd = new SimpleDialog.PollutionDialog();
-            pd.showPollution();
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("pollutionDialog.fxml"));
+            Parent root = null;
+            try {
+                root = fxmlLoader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            PopupController pc = fxmlLoader.getController();
+            pc.showAirPollution();
+            setupStage(root,"Air Pollution");
         }
 
         private void showAirPollutionForecast() {
-            SimpleDialog.PollutionDialog pd = new SimpleDialog.PollutionDialog();
-            pd.showPollutionForecast();
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("pollutionDialog.fxml"));
+            Parent root = null;
+            try {
+                root = fxmlLoader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            PopupController pc = fxmlLoader.getController();
+            pc.showAirPollutionForecast();
+            setupStage(root,"Air Pollution Forecast");
+        }
+
+        private void enableDisableUsers(){
+            ArrayList<User> enabledUserList = MongoDBManager.getInstance().getUsersByStatus(0);
+            ArrayList<User> notenabledUserList = MongoDBManager.getInstance().getUsersByStatus(1);
+
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisableUser.fxml"));
+            Parent root = null;
+            try {
+                root = fxmlLoader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            PopupController pc = fxmlLoader.getController();
+            pc.showEnableDisable(enabledUserList, notenabledUserList);
+            setupStage(root,"Enable Or Disable Users");
+        }
+
+        private void setupStage(Parent root, String title){
+            Stage stage = new Stage();
+            // now that we want to open dialog, we must use this line:
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.setTitle(title);
+            stage.show();
         }
 
         // add the markers to the map - they are still invisible
