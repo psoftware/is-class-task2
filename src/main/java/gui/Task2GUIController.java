@@ -13,6 +13,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import main.java.City;
+import main.java.User;
 import main.java.db.MongoDBManager;
 
 import java.awt.event.MouseEvent;
@@ -100,7 +101,7 @@ public class Task2GUIController {
         locations = MongoDBManager.getInstance().getLocationList();
     }
 
-    public void initMapAndControls(Projection projection) {
+    public void initMapAndControls(Projection projection, User user) {
         // set the custom css file for the MapView
         mapView.setCustomMapviewCssURL(getClass().getResource("/custom_mapview.css"));
 
@@ -111,28 +112,31 @@ public class Task2GUIController {
         mapView.initialize();
         mapView.initializedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
-                afterMapIsInitialized();
+                afterMapIsInitialized(user);
             }
         });
         mapView.initialize(Configuration.builder().projection(projection).showZoomControls(true).build());
     }
 
-    private void afterMapIsInitialized() {
+    private void afterMapIsInitialized(User user) {
         // set defaults
         mapView.setZoom(ZOOM_DEFAULT);
         mapView.setCenter(coordDefault);
+
+        leftControls.setExpandedPane(paneFilters);
 
         buttonFilter.setOnAction((event) -> searchLocation());
         buttonShowWeatherHistory.setOnAction((event) -> showWeatherHistory());
         buttonShowWeatherForecast.setOnAction((event) -> showWeatherForecast());
         buttonShowAirPollution.setOnAction((event) -> showAirPollution());
-        buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
+        if(!user.getStatus().equals(User.Status.NOTENABLED))
+            buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
 
         for (City c : locations) {
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
-            Marker marker = new Marker(getClass().getResource("/Map-Marker.png"), 0, 0).setPosition(coords)
+            Marker marker = new Marker(getClass().getResource("/Map-Marker.png"), -10, -20).setPosition(coords)
                     .setVisible(false);
-            MapLabel label = new MapLabel(c.getCity(), 0, 35).setPosition(coords).setCssClass("label");
+            MapLabel label = new MapLabel(c.getCity(), -5, 15).setPosition(coords).setCssClass("label");
             markers.add(marker);
             labels.add(label);
             marker.attachLabel(label);

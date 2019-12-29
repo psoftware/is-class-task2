@@ -15,20 +15,7 @@
             <menus>
                 <Menu mnemonicParsing="false" text="Locations">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Add Location" />
-                        <MenuItem mnemonicParsing="false" text="Remove Location" />
                         <MenuItem mnemonicParsing="false" text="Propose Location" />
-                    </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Users">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="Enable / Disable User" />
-                        <MenuItem mnemonicParsing="false" text="Promote to / Demote from Admin" />
-                    </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Admin">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="Insert Weather / Pollution Data" />
                     </items>
                 </Menu>
             </menus>
