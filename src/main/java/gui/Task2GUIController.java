@@ -13,10 +13,13 @@ import javafx.stage.Stage;
 import main.java.City;
 import main.java.User;
 import main.java.db.MongoDBManager;
+import main.java.measures.MeasureValue;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.lang.String;
+import java.util.HashMap;
 
 public class Task2GUIController {
     @FXML
@@ -93,6 +96,8 @@ public class Task2GUIController {
     private ArrayList<Marker> markers = new ArrayList<>();
 
     private ArrayList<MapLabel> labels = new ArrayList<>();
+
+    private City selectedCity;
 
     private static final int ZOOM_DEFAULT = 4;
 
@@ -185,6 +190,8 @@ public class Task2GUIController {
                 if (m.getPosition().equals(coords))
                     m.setVisible(true);
             }
+
+            selectedCity = c;
         }
 
         private City getClosestCity(Coordinate clickPosition){
@@ -232,6 +239,15 @@ public class Task2GUIController {
         }
 
         private void showAirPollution() {
+            LocalDateTime startDate = LocalDateTime.now().minusDays(15), endDate = LocalDateTime.now().minusDays(10);
+            HashMap<City.CityName, ArrayList<MeasureValue>> result =
+                    MongoDBManager.getInstance().getDailyPollution(startDate, endDate);
+            ArrayList<MeasureValue> dailyPollution = result.get(selectedCity.getCityName());
+            if(dailyPollution == null) {
+                SimpleDialog.showErrorDialog("No pollution data for this location and time!");
+                return;
+            }
+
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("pollutionDialog.fxml"));
             Parent root = null;
             try {
@@ -241,7 +257,7 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showAirPollution();
+            pc.showAirPollution(dailyPollution);
             setupStage(root,"Air Pollution");
         }
 
