@@ -6,29 +6,46 @@ import com.mongodb.client.*;
 import com.mongodb.client.model.IndexOptions;
 import io.github.cbartosiak.bson.codecs.jsr310.duration.DurationAsDecimal128Codec;
 import io.github.cbartosiak.bson.codecs.jsr310.localdate.LocalDateAsDateTimeCodec;
-import io.github.cbartosiak.bson.codecs.jsr310.localdate.LocalDateAsDocumentCodec;
 import io.github.cbartosiak.bson.codecs.jsr310.localdatetime.LocalDateTimeAsDateTimeCodec;
-import io.github.cbartosiak.bson.codecs.jsr310.localdatetime.LocalDateTimeAsDocumentCodec;
 import main.java.City;
 import main.java.User;
 import main.java.fetch.FetchAdapter;
 import main.java.fetch.FetchUtils;
+import main.java.measures.MeasureValue;
+import org.bson.BsonType;
 import org.bson.Document;
+import org.bson.codecs.BsonTypeClassMap;
+import org.bson.codecs.DocumentCodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.conversions.Bson;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
+import static com.mongodb.client.model.Accumulators.avg;
+import static com.mongodb.client.model.Accumulators.push;
+import static com.mongodb.client.model.Aggregates.*;
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Projections.*;
 
 public class MongoDBManager {
+    // This is needed to switch default DATE_TIME decoding from Date to LocalDateTime
+    public static final DocumentCodecProvider documentCodecProvider;
+    static {
+        Map<BsonType, Class<?>> replacements = new HashMap<>();
+        replacements.put(BsonType.DATE_TIME, LocalDateTime.class);
+        documentCodecProvider = new DocumentCodecProvider(new BsonTypeClassMap(replacements));
+    }
+
     public final static CodecRegistry CODEC_REGISTRY = CodecRegistries.fromRegistries(
-            MongoClientSettings.getDefaultCodecRegistry(),
+            CodecRegistries.fromProviders(documentCodecProvider),
             CodecRegistries.fromCodecs(new DurationAsDecimal128Codec()),
             CodecRegistries.fromCodecs(new LocalDateAsDateTimeCodec()),
-            CodecRegistries.fromCodecs(new LocalDateTimeAsDateTimeCodec())
+            CodecRegistries.fromCodecs(new LocalDateTimeAsDateTimeCodec()),
+            MongoClientSettings.getDefaultCodecRegistry()
     );
 
     private final static String MONGO_URL = "mongodb://localhost:27017";
@@ -158,6 +175,114 @@ public class MongoDBManager {
         FetchAdapter.getInstance().fetchForecastData(database.getCollection("measureswfor"), city);
     }
 
+    private HashMap<City.CityName, ArrayList<MeasureValue>> parsePollutionList(
+            AggregateIterable<Document> aggregateList, String arrayName) {
+        HashMap<City.CityName, ArrayList<MeasureValue>> cityMap = new HashMap<>();
+
+        for(Document d : aggregateList) { // iterate by city first
+            City.CityName city = new City.CityName(d.getString("country"), d.getString("city"));
+
+            // iterate dates (day only)
+            List<Document> daylist = d.getList(arrayName, Document.class);
+            for(Document dd : daylist) {
+                LocalDateTime day = dd.get("datetime", LocalDateTime.class);
+                // iterate pollutants
+                List<Document> pollutants = dd.getList("pollutants", Document.class);
+                for(Document ddd : pollutants) {
+                    MeasureValue m = new MeasureValue(day, city,
+                            ddd.getString("pollutant"),
+                            ddd.getDouble("value"),
+                            ddd.getString("unit"));
+
+                    if(!cityMap.containsKey(city))
+                        cityMap.put(city, new ArrayList<>());
+                    cityMap.get(city).add(m);
+                }
+            }
+        }
+
+        return cityMap;
+    }
+
+    // TODO: hours are not discretized
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyPollution(LocalDateTime startDate, LocalDateTime endDate) {
+        if(startDate.compareTo(endDate) > 0)
+            return null;
+
+        MongoCollection<Document> collection = database.getCollection("measurespoll");
+
+        List<Bson> pipeline = Arrays.asList(
+                    match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
+                        eq("enabled", true))),
+                    unwind("$pollutionMeasurements"),
+                    match(and(lte("pollutionMeasurements.datetime", endDate),
+                            gte("pollutionMeasurements.datetime", startDate))),
+                    unwind("$pollutionMeasurements.measurements"),
+                    project(fields(include("city", "country", "coordinates"), excludeId(),
+                            computed("pollutionMeasurements.year", eq("$year", "$pollutionMeasurements.datetime")),
+                            computed("pollutionMeasurements.month", eq("$month", "$pollutionMeasurements.datetime")),
+                            computed("pollutionMeasurements.day", eq("$dayOfMonth", "$pollutionMeasurements.datetime")),
+                            computed("pollutionMeasurements.hour", eq("$hour", "$pollutionMeasurements.datetime")),
+                            computed("measurement", "$pollutionMeasurements.measurements"))),
+                    group(and(eq("city", "$city"), eq("country", "$country"),
+                            eq("year", "$pollutionMeasurements.year"), eq("month", "$pollutionMeasurements.month"),
+                            eq("day", "$pollutionMeasurements.day"), eq("hour", "$pollutionMeasurements.hour"),
+                            eq("pollutant", "$measurement.name"), eq("unit", "$measurement.unit")),
+                            avg("value", "$measurement.value")),
+                    group(and(eq("city", "$_id.city"), eq("country", "$_id.country"),
+                            eq("datetime", eq("$dateFromParts", and(eq("year", "$_id.year"),
+                                    eq("month", "$_id.month"), eq("day", "$_id.day"),
+                                    eq("hour", "$_id.hour"))))),
+                            push("measurements", and(eq("pollutant", "$_id.pollutant"),
+                                    eq("unit", "$_id.unit"), eq("value", "$value")))),
+                    group(and(eq("city", "$_id.city"), eq("country", "$_id.country")),
+                            push("hourlymeasurements", and(eq("datetime", "$_id.datetime"),
+                                    eq("pollutants", "$measurements")))),
+                    project(fields(excludeId(), computed("city", "$_id.city"),
+                            computed("country", "$_id.country"), include("hourlymeasurements"))));
+
+        AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
+        return parsePollutionList(aggregateList, "hourlymeasurements");
+    }
+
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPollution(LocalDateTime startDate, LocalDateTime endDate) {
+        if(startDate.compareTo(endDate) > 0)
+            return null;
+
+        MongoCollection<Document> collection = database.getCollection("measurespoll");
+
+        List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart",
+                endDate), gte("periodEnd",
+                startDate), eq("enabled", true))),
+                unwind("$pollutionMeasurements"),
+                match(and(lte("pollutionMeasurements.datetime", endDate),
+                        gte("pollutionMeasurements.datetime", startDate))),
+                unwind("$pollutionMeasurements.measurements"),
+                project(fields(include("city", "country", "coordinates"), excludeId(),
+                        computed("pollutionMeasurements.year", eq("$year", "$pollutionMeasurements.datetime")),
+                        computed("pollutionMeasurements.month", eq("$month", "$pollutionMeasurements.datetime")),
+                        computed("pollutionMeasurements.day", eq("$dayOfMonth", "$pollutionMeasurements.datetime")),
+                        computed("pollutionMeasurements.hour", eq("$hour", "$pollutionMeasurements.datetime")),
+                        computed("measurement", "$pollutionMeasurements.measurements"))),
+                group(and(eq("city", "$city"), eq("country", "$country"),
+                        eq("year", "$pollutionMeasurements.year"), eq("month", "$pollutionMeasurements.month"),
+                        eq("day", "$pollutionMeasurements.day"), eq("pollutant", "$measurement.name"),
+                        eq("unit", "$measurement.unit")), avg("value", "$measurement.value")),
+                group(and(eq("city", "$_id.city"), eq("country", "$_id.country"),
+                        eq("datetime", eq("$dateFromParts",and(eq("year", "$_id.year"),
+                                eq("month", "$_id.month"), eq("day", "$_id.day"))))),
+                        push("pollutants", and(eq("pollutant", "$_id.pollutant"),
+                                eq("unit", "$_id.unit"), eq("value", "$value")))),
+                group(and(eq("city", "$_id.city"), eq("country", "$_id.country")),
+                        push("dailymeasurements", and(eq("datetime", "$_id.datetime"),
+                                eq("pollutants", "$pollutants")))),
+                project(fields(excludeId(), computed("city", "$_id.city"),
+                        computed("country", "$_id.country"), include("dailymeasurements"))));
+
+        AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
+        return parsePollutionList(aggregateList, "dailymeasurements");
+    }
+
     public void loadMeasure(LocalDateTime startDate, LocalDateTime endDate ) {
 
     }
@@ -208,6 +333,17 @@ public class MongoDBManager {
             // try loading pollution measures
             City cityRome = new City("IT", "Roma", new City.Coords(41.902782, 12.4963));
             MongoDBManager.getInstance().testMeasureImport(cityRome);
+
+            // fetch pollution by hours and days
+            System.out.println("Test getHourlyPollution:");
+            HashMap<City.CityName, ArrayList<MeasureValue>> mres;
+            mres = MongoDBManager.getInstance().getHourlyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5));
+            for(MeasureValue m : mres.get(cityRome.getCityName()))
+                System.out.println(m.toString());
+            System.out.println("Test getDailyPollution:");
+            mres = MongoDBManager.getInstance().getDailyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5));
+            for(MeasureValue m : mres.get(cityRome.getCityName()))
+                System.out.println(m.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
