@@ -9,8 +9,12 @@ public class City {
     private Coords coords;
 
     public City(String country, String city, Coords coords){
+        this(new CityName(country, city), coords);
+    }
+
+    public City(CityName cityName, Coords coords){
         this.coords = coords;
-        this.cityName = new CityName(country, city);
+        this.cityName = cityName;
     }
 
     public String getCountry() {

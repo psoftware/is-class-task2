@@ -232,11 +232,18 @@ public class FetchAdapter {
     */
 
     public List<City> fetchAllCitiesAsList() throws IOException {
+        class CoordsAvg {
+            private double latSum=0, lonSum=0;
+            private int count=0;
+            public void add(City.Coords c){ latSum+=c.lat; lonSum+=c.lon; count++;}
+            public City.Coords compute() { return new City.Coords(latSum/count, lonSum/count); }
+        }
+
         List<City> resultList = new ArrayList<>();
 
         JSONObject jsonDoc = OpenAQFetcher.getInstance().getAllLocations();
         JSONArray jsonLocationList = jsonDoc.getJSONArray("results");
-        HashSet<String> alreadyAdded = new HashSet<>();
+        HashMap<City.CityName, CoordsAvg> cityMap = new HashMap<>();
         for(int i=0; i<jsonLocationList.length(); i++) {
             JSONObject jsonLocation = jsonLocationList.getJSONObject(i);
             String country = jsonLocation.getString("country");
@@ -248,16 +255,18 @@ public class FetchAdapter {
             if(city.equals("N/A") || country.equals("N/A") || city.equals("unused"))
                 continue;
 
-            // TODO: Fix this design error. What coordinate set should we use if there are many locations in the same city?
-            String cityHashKey = country + ',' + city;
-            if(alreadyAdded.contains(cityHashKey))
-                continue;
-
             City newcity = new City(country, city, new City.Coords(latitude, longitude));
-            resultList.add(newcity);
-            alreadyAdded.add(cityHashKey);
+
+            // TODO: Fix this design error. What coordinate set should we use if there are many locations in the same city?
+            // For now lets take a centroid using avg on lat and lon
+            if(!cityMap.containsKey(newcity.getCityName()))
+                cityMap.put(newcity.getCityName(), new CoordsAvg());
+
+            cityMap.get(newcity.getCityName()).add(newcity.getCoords());
         }
 
+        for(Map.Entry<City.CityName, CoordsAvg> c : cityMap.entrySet())
+            resultList.add(new City(c.getKey(), c.getValue().compute()));
         return resultList;
     }
 
