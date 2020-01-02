@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.lang.String;
 import java.util.HashMap;
+import java.util.function.BiConsumer;
 
 public class Task2GUIController {
     @FXML
@@ -152,11 +153,11 @@ public class Task2GUIController {
         });
         mapView.initialize(Configuration.builder().projection(projection).showZoomControls(true).build());
 
-        changeTimePane(TimePaneType.HIDDEN);
+        changeTimePane(TimePaneType.HIDDEN, null);
     }
 
     private enum TimePaneType{HIDDEN, DATERANGE, SINGLEDATE};
-    private void changeTimePane(TimePaneType paneType) {
+    private void changeTimePane(TimePaneType paneType, BiConsumer<LocalDate, LocalDate> onSubmit) {
         if(paneType == TimePaneType.DATERANGE && !leftControls.getPanes().contains(paneTimeRange)) {
             leftControls.getPanes().add(paneTimeRange);
             leftControls.getPanes().remove(paneSingleDay);
@@ -169,8 +170,24 @@ public class Task2GUIController {
             leftControls.getPanes().removeAll(paneTimeRange, paneSingleDay);
 
         switch(paneType) {
-            case DATERANGE: leftControls.setExpandedPane(paneTimeRange); break;
-            case SINGLEDATE: leftControls.setExpandedPane(paneSingleDay); break;
+            case DATERANGE:
+                leftControls.setExpandedPane(paneTimeRange);
+                buttonSubmitTimeRange.setOnAction(ev -> {
+                    if(datepickerStart.getValue() == null || datepickerEnd.getValue() == null)
+                        SimpleDialog.showErrorDialog("Invalid start or end date");
+                    else
+                        onSubmit.accept(datepickerStart.getValue(), datepickerEnd.getValue());
+                });
+                break;
+            case SINGLEDATE:
+                leftControls.setExpandedPane(paneSingleDay);
+                buttonSubmitSingleDay.setOnAction(ev -> {
+                    if(datepickerSingleDay.getValue() == null)
+                        SimpleDialog.showErrorDialog("Invalid day value");
+                    else
+                        onSubmit.accept(datepickerSingleDay.getValue(),null);
+                });
+                break;
         }
     }
 
@@ -183,33 +200,29 @@ public class Task2GUIController {
 
         // button events
         buttonFilter.setOnAction((event) -> searchLocation());
-        buttonShowWeatherHistory.setOnAction((event) -> showWeatherHistory());
-        buttonShowWeatherForecast.setOnAction((event) -> showWeatherForecast());
 
-        buttonShowAirPollution.setOnAction((event) -> {
-            changeTimePane(TimePaneType.SINGLEDATE);
-            buttonSubmitSingleDay.setOnAction(ev -> {
-                if(datepickerSingleDay.getValue() == null)
-                    SimpleDialog.showErrorDialog("Invalid day value");
-                else
-                    showAirPollution(datepickerSingleDay.getValue());
-            });
-        });
+        // Base use cases
+        buttonShowWeatherHistory.setOnAction(
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherHistory()));
+        buttonShowWeatherForecast.setOnAction(
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast()));
+        buttonShowAirPollution.setOnAction(
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollution(d1)));
 
+        // Regular additional use cases
         if(!user.getStatus().equals(User.Status.NOTENABLED))
-            buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
+            buttonShowAirPollutionForecast.setOnAction(
+                        (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast()));
+
+        // Admin additional use cases
         if(user.getStatus().equals(User.Status.ADMIN)) {
-            buttonFetchPollution.setOnAction(e -> {
-                changeTimePane(TimePaneType.DATERANGE);
-                buttonSubmitTimeRange.setOnAction(ev -> {
-                    if(datepickerStart.getValue() == null || datepickerEnd.getValue() == null)
-                        SimpleDialog.showErrorDialog("Invalid start or end date");
-                    else
-                        new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
+            buttonFetchPollution.setOnAction(e ->
+                changeTimePane(TimePaneType.DATERANGE,
+                        (d1, d2) -> new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
                                         .loadPollutionFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue()),
-                                "Loading Pollution Measures...", "Pollution measures loading success");
-                });
-            });
+                                "Loading Pollution Measures...", "Pollution measures loading success")
+                )
+            );
         }
 
         // menu events
