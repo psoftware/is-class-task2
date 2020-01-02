@@ -16,6 +16,7 @@ import main.java.db.MongoDBManager;
 import main.java.measures.MeasureValue;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.lang.String;
@@ -156,10 +157,16 @@ public class Task2GUIController {
 
     private enum TimePaneType{HIDDEN, DATERANGE, SINGLEDATE};
     private void changeTimePane(TimePaneType paneType) {
-        if(paneType == TimePaneType.DATERANGE && !leftControls.getPanes().contains(paneTimeRange))
+        if(paneType == TimePaneType.DATERANGE && !leftControls.getPanes().contains(paneTimeRange)) {
             leftControls.getPanes().add(paneTimeRange);
-        else if(paneType == TimePaneType.SINGLEDATE && !leftControls.getPanes().contains(paneSingleDay))
+            leftControls.getPanes().remove(paneSingleDay);
+            leftControls.setExpandedPane(paneTimeRange);
+        }
+        else if(paneType == TimePaneType.SINGLEDATE && !leftControls.getPanes().contains(paneSingleDay)) {
             leftControls.getPanes().add(paneSingleDay);
+            leftControls.getPanes().remove(paneTimeRange);
+            leftControls.setExpandedPane(paneSingleDay);
+        }
         else if(paneType == TimePaneType.HIDDEN)
             leftControls.getPanes().removeAll(paneTimeRange, paneSingleDay);
     }
@@ -175,7 +182,17 @@ public class Task2GUIController {
         buttonFilter.setOnAction((event) -> searchLocation());
         buttonShowWeatherHistory.setOnAction((event) -> showWeatherHistory());
         buttonShowWeatherForecast.setOnAction((event) -> showWeatherForecast());
-        buttonShowAirPollution.setOnAction((event) -> showAirPollution());
+
+        buttonShowAirPollution.setOnAction((event) -> {
+            changeTimePane(TimePaneType.SINGLEDATE);
+            buttonSubmitSingleDay.setOnAction(ev -> {
+                if(datepickerSingleDay.getValue() == null)
+                    SimpleDialog.showErrorDialog("Invalid day value");
+                else
+                    showAirPollution(datepickerSingleDay.getValue());
+            });
+        });
+
         if(!user.getStatus().equals(User.Status.NOTENABLED))
             buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
         if(user.getStatus().equals(User.Status.ADMIN)) {
@@ -295,8 +312,8 @@ public class Task2GUIController {
             setupStage(root,"Weather Forecast");
         }
 
-        private void showAirPollution() {
-            LocalDateTime startDate = LocalDateTime.now().minusDays(15), endDate = LocalDateTime.now().minusDays(10);
+        private void showAirPollution(LocalDate refday) {
+            LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
                     MongoDBManager.getInstance().getDailyPollution(startDate, endDate);
             ArrayList<MeasureValue> dailyPollution = result.get(selectedCity.getCityName());

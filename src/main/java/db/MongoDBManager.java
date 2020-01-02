@@ -23,6 +23,7 @@ import org.bson.conversions.Bson;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 import static com.mongodb.client.model.Accumulators.avg;
@@ -249,6 +250,10 @@ public class MongoDBManager {
 
         AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
         return parsePollutionList(aggregateList, "hourlymeasurements");
+    }
+
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPollution(LocalDate startDate, LocalDate endDate) {
+        return getDailyPollution(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX));
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPollution(LocalDateTime startDate, LocalDateTime endDate) {
