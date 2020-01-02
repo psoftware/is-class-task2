@@ -53,6 +53,10 @@ public class Task2GUIController {
     @FXML
     private TitledPane paneActions;
 
+    /** TitledPane to contain all the uses*/
+    @FXML
+    private TitledPane paneTimeRange;
+
     /** VBox to contain dynamic locations*/
     @FXML
     private VBox locationButtons;
@@ -87,6 +91,27 @@ public class Task2GUIController {
 
     @FXML
     private Button buttonShowAirPollutionForecast;
+
+    @FXML
+    private Button buttonFetchPollution;
+
+    @FXML
+    private DatePicker datepickerStart;
+
+    @FXML
+    private DatePicker datepickerEnd;
+
+    @FXML
+    private Button buttonSubmitTimeRange;
+
+    @FXML
+    private TitledPane paneSingleDay;
+
+    @FXML
+    private DatePicker datepickerSingleDay;
+
+    @FXML
+    private Button buttonSubmitSingleDay;
 
     @FXML
     private MenuItem enableDisableMenu;
@@ -125,6 +150,18 @@ public class Task2GUIController {
             }
         });
         mapView.initialize(Configuration.builder().projection(projection).showZoomControls(true).build());
+
+        changeTimePane(TimePaneType.HIDDEN);
+    }
+
+    private enum TimePaneType{HIDDEN, DATERANGE, SINGLEDATE};
+    private void changeTimePane(TimePaneType paneType) {
+        if(paneType == TimePaneType.DATERANGE && !leftControls.getPanes().contains(paneTimeRange))
+            leftControls.getPanes().add(paneTimeRange);
+        else if(paneType == TimePaneType.SINGLEDATE && !leftControls.getPanes().contains(paneSingleDay))
+            leftControls.getPanes().add(paneSingleDay);
+        else if(paneType == TimePaneType.HIDDEN)
+            leftControls.getPanes().removeAll(paneTimeRange, paneSingleDay);
     }
 
     private void afterMapIsInitialized(User user) {
@@ -141,6 +178,19 @@ public class Task2GUIController {
         buttonShowAirPollution.setOnAction((event) -> showAirPollution());
         if(!user.getStatus().equals(User.Status.NOTENABLED))
             buttonShowAirPollutionForecast.setOnAction((event) -> showAirPollutionForecast());
+        if(user.getStatus().equals(User.Status.ADMIN)) {
+            buttonFetchPollution.setOnAction(e -> {
+                changeTimePane(TimePaneType.DATERANGE);
+                buttonSubmitTimeRange.setOnAction(ev -> {
+                    if(datepickerStart.getValue() == null || datepickerEnd.getValue() == null)
+                        SimpleDialog.showErrorDialog("Invalid start or end date");
+                    else
+                        new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
+                                        .loadPollutionFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue()),
+                                "Loading Pollution Measures...", "Pollution measures loading success");
+                });
+            });
+        }
 
         // menu events
         enableDisableMenu.setOnAction((event -> enableDisableUsers()));

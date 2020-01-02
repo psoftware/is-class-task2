@@ -164,6 +164,12 @@ public class MongoDBManager {
         database.getCollection("users").createIndex(new Document("username", 1), new IndexOptions().unique(true));
     }
 
+    public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
+        MongoCollection<Document> collection = database.getCollection("measurespoll");
+        for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate); d = d.plusDays(1))
+            FetchAdapter.getInstance().fetchPollutionData(collection, city, d);
+    }
+
     public void testMeasureImport(City city) throws IOException {
         for(int i=0; i<15; i++) {
             FetchAdapter.getInstance()
