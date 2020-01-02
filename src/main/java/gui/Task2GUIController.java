@@ -160,15 +160,18 @@ public class Task2GUIController {
         if(paneType == TimePaneType.DATERANGE && !leftControls.getPanes().contains(paneTimeRange)) {
             leftControls.getPanes().add(paneTimeRange);
             leftControls.getPanes().remove(paneSingleDay);
-            leftControls.setExpandedPane(paneTimeRange);
         }
         else if(paneType == TimePaneType.SINGLEDATE && !leftControls.getPanes().contains(paneSingleDay)) {
             leftControls.getPanes().add(paneSingleDay);
             leftControls.getPanes().remove(paneTimeRange);
-            leftControls.setExpandedPane(paneSingleDay);
         }
         else if(paneType == TimePaneType.HIDDEN)
             leftControls.getPanes().removeAll(paneTimeRange, paneSingleDay);
+
+        switch(paneType) {
+            case DATERANGE: leftControls.setExpandedPane(paneTimeRange); break;
+            case SINGLEDATE: leftControls.setExpandedPane(paneSingleDay); break;
+        }
     }
 
     private void afterMapIsInitialized(User user) {

@@ -81,8 +81,8 @@
                     <content>
                         <VBox spacing="10.0">
                             <children>
-                                <DatePicker fx:id="datepickerStart" maxWidth="Infinity"/>
-                                <DatePicker fx:id="datepickerEnd" maxWidth="Infinity"/>
+                                <DatePicker fx:id="datepickerStart" promptText="Start date" maxWidth="Infinity"/>
+                                <DatePicker fx:id="datepickerEnd" promptText="End date" maxWidth="Infinity"/>
                                 <Button fx:id="buttonSubmitTimeRange" text="Submit" maxWidth="Infinity"/>
                             </children>
                         </VBox>
