@@ -52,6 +52,10 @@ public abstract class SimpleDialog<T> extends Dialog<T> {
         alert.showAndWait();
     }
 
+    public static void showIfErrorOrSuccess(LoadingWindow.ThrowingRunnable<Exception> r, String loadingtext, String successmsg) {
+        new LoadingWindow().showAndWaitCallable(r, loadingtext, successmsg);
+    }
+
     public static void showConfirmDialog(String info) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Success");

@@ -91,6 +91,9 @@ public class Task2GUIController {
     @FXML
     private MenuItem enableDisableMenu;
 
+    @FXML
+    private MenuItem reloadLocationsMenuItem;
+
     private ArrayList<City> locations;
 
     private ArrayList<Marker> markers = new ArrayList<>();
@@ -141,6 +144,10 @@ public class Task2GUIController {
 
         // menu events
         enableDisableMenu.setOnAction((event -> enableDisableUsers()));
+        reloadLocationsMenuItem.setOnAction(event -> SimpleDialog.showIfErrorOrSuccess(
+                () -> MongoDBManager.getInstance().resetLocationList(),
+                "Reloading locations...","Location reload completed"
+        ));
 
         for (City c : locations) {
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
