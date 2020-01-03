@@ -10,6 +10,7 @@ import com.sothawo.mapjfx.event.MapViewEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import main.java.City;
 import main.java.User;
 import main.java.db.MongoDBManager;
@@ -17,10 +18,10 @@ import main.java.measures.MeasureValue;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.lang.String;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.BiConsumer;
 
 public class Task2GUIController {
@@ -156,8 +157,39 @@ public class Task2GUIController {
         changeTimePane(TimePaneType.HIDDEN, null);
     }
 
+    private Callback<DatePicker, DateCell> getFactoryForDatePickerAvalability(HashSet<LocalDate> dateSet) {
+        return (datePicker) -> new DateCell() {
+                    @Override public void updateItem(LocalDate itemDate, boolean empty) {
+                        super.updateItem(itemDate, empty);
+
+                        if (empty || itemDate == null) { // on datepicker factory change
+                            setTooltip(null);
+                            setStyle(null);
+                            setDisable(false);
+                            return;
+                        }
+
+                        if (dateSet.contains(itemDate) &&
+                                !(getStyleClass().contains("next-month") || getStyleClass().contains("previous-month"))
+                        ) {
+                            setDisable(false);
+                            //setStyle("-fx-background-color: #5bff98;");
+                        } else {
+                            setTooltip(null);
+                            setStyle(null);
+                            setDisable(true);
+                        }
+                    }
+        };
+    }
+
     private enum TimePaneType{HIDDEN, DATERANGE, SINGLEDATE};
+
     private void changeTimePane(TimePaneType paneType, BiConsumer<LocalDate, LocalDate> onSubmit) {
+        changeTimePane(paneType, onSubmit, null);
+    }
+
+    private void changeTimePane(TimePaneType paneType, BiConsumer<LocalDate, LocalDate> onSubmit, HashSet<LocalDate> dateSet) {
         if(paneType == TimePaneType.DATERANGE && !leftControls.getPanes().contains(paneTimeRange)) {
             leftControls.getPanes().add(paneTimeRange);
             leftControls.getPanes().remove(paneSingleDay);
@@ -187,8 +219,14 @@ public class Task2GUIController {
                     else
                         onSubmit.accept(datepickerSingleDay.getValue(),null);
                 });
+
+                datepickerSingleDay.setDayCellFactory((dateSet == null) ? null : getFactoryForDatePickerAvalability(dateSet));
                 break;
         }
+    }
+
+    public City getSelectedCity() {
+        return selectedCity;
     }
 
     private void afterMapIsInitialized(User user) {
@@ -207,7 +245,8 @@ public class Task2GUIController {
         buttonShowWeatherForecast.setOnAction(
                 (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast()));
         buttonShowAirPollution.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollution(d1)));
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollution(d1),
+                        MongoDBManager.getInstance().getPollutionAvailableDates(getSelectedCity())));
 
         // Regular additional use cases
         if(!user.getStatus().equals(User.Status.NOTENABLED))

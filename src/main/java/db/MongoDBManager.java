@@ -26,8 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
-import static com.mongodb.client.model.Accumulators.avg;
-import static com.mongodb.client.model.Accumulators.push;
+import static com.mongodb.client.model.Accumulators.*;
 import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Projections.*;
@@ -209,6 +208,30 @@ public class MongoDBManager {
         }
 
         return cityMap;
+    }
+
+    public HashSet<LocalDate> getPollutionAvailableDates(City city) {
+        List<Bson> pipeline = Arrays.asList(
+                match(and(eq("city", city.getCity()), eq("country", city.getCountry()),
+                        eq("enabled", true))),
+                unwind("$pollutionMeasurements"),
+                project(fields(excludeId(), computed("year", eq("$year", "$pollutionMeasurements.datetime")),
+                        computed("month", eq("$month", "$pollutionMeasurements.datetime")),
+                        computed("day", eq("$dayOfMonth", "$pollutionMeasurements.datetime")))),
+                group(and(eq("year", "$year"), eq("month", "$month"), eq("day", "$day")),
+                        sum("count", 1L)),
+                project(fields(excludeId(), computed("date", eq("$dateFromParts",
+                        and(eq("year", "$_id.year"), eq("month", "$_id.month"),
+                                eq("day", "$_id.day")))))));
+
+        HashSet<LocalDate> resultSet = new HashSet<>();
+
+        MongoCollection<Document> collection = database.getCollection("measurespoll");
+        AggregateIterable<Document> aggregateIterable = collection.aggregate(pipeline);
+        for(Document d : aggregateIterable)
+            resultSet.add(d.get("date", LocalDateTime.class).toLocalDate());
+
+        return resultSet;
     }
 
     // TODO: hours are not discretized
