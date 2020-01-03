@@ -1,6 +1,7 @@
 package main.java.gui;
 
 import com.sothawo.mapjfx.*;
+import com.sothawo.mapjfx.offline.OfflineCache;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -17,6 +18,8 @@ import main.java.db.MongoDBManager;
 import main.java.measures.MeasureValue;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.lang.String;
@@ -145,6 +148,17 @@ public class Task2GUIController {
         // bind the map's center and zoom properties to the corresponding labels and format them
         //labelCenter.textProperty().bind(Bindings.format("Center: %s", mapView.centerProperty()));
         //labelZoom.textProperty().bind(Bindings.format("Zoom: %.0f", mapView.zoomProperty()));
+
+        final OfflineCache offlineCache = mapView.getOfflineCache();
+        final String cacheDir = System.getProperty("java.io.tmpdir") + "/mapjfx-cache";
+        try {
+            Files.createDirectories(Paths.get(cacheDir));
+            offlineCache.setCacheDirectory(cacheDir);
+            offlineCache.setActive(true);
+        } catch (IOException e) {
+            System.out.println("could not activate offline cache:");
+            e.printStackTrace();
+        }
 
         mapView.initialize();
         mapView.initializedProperty().addListener((observable, oldValue, newValue) -> {
