@@ -10,7 +10,6 @@ import io.github.cbartosiak.bson.codecs.jsr310.localdatetime.LocalDateTimeAsDate
 import main.java.City;
 import main.java.User;
 import main.java.fetch.FetchAdapter;
-import main.java.fetch.FetchUtils;
 import main.java.measures.MeasureValue;
 import org.bson.BsonType;
 import org.bson.Document;
@@ -51,6 +50,15 @@ public class MongoDBManager {
     private final static String MONGO_URL = "mongodb://localhost:27017";
     private final static String DATABASE_NAME = "task2";
 
+    enum AppCollection {
+        PAST_WEATHER("measureswpast"), FORECAST_WEATHER("measureswfor"),
+        POLLUTION("measurespoll"), USERS("users"), LOCATIONS("locations");
+
+        private final String name;
+        AppCollection(String name) { this.name = name; }
+        public String getName() { return name; }
+    };
+
     private static MongoDBManager INSTANCE = new MongoDBManager();
     public static MongoDBManager getInstance() {
         return INSTANCE;
@@ -69,14 +77,14 @@ public class MongoDBManager {
     }
 
     public void resetLocationList() throws IOException {
-        MongoCollection<Document> collection = database.getCollection("locations");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
         collection.deleteMany(new Document());
         collection.insertMany(FetchAdapter.getInstance().fetchAllCities());
     }
 
     public ArrayList<City> getLocationList() {
         ArrayList<City> resultList = new ArrayList<>();
-        MongoCollection<Document> collection = database.getCollection("locations");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
         MongoCursor<Document> cursor = collection.find().iterator();
         try {
             while (cursor.hasNext()) {
@@ -123,7 +131,7 @@ public class MongoDBManager {
     }
 
     public User getUserWithPassword(String username, String password) {
-        MongoCollection<Document> collection = database.getCollection("users");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.USERS.getName());
         MongoCursor<Document> cursor = collection.find(new Document("username", username)).cursor();
         if(!cursor.hasNext())
             return null; // Missing user
@@ -161,11 +169,11 @@ public class MongoDBManager {
     }
 
     private void createUserIndex() {
-        database.getCollection("users").createIndex(new Document("username", 1), new IndexOptions().unique(true));
+        database.getCollection(AppCollection.USERS.getName()).createIndex(new Document("username", 1), new IndexOptions().unique(true));
     }
 
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
-        MongoCollection<Document> collection = database.getCollection("measurespoll");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1))
             FetchAdapter.getInstance().fetchPollutionData(collection, city, d);
     }
@@ -174,7 +182,7 @@ public class MongoDBManager {
         if(startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now()))
             throw new IllegalArgumentException("Cannot fetch past weather for future days");
 
-        MongoCollection<Document> collection = database.getCollection("measureswpast");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName());
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1))
             FetchAdapter.getInstance().fetchHistoricalData(collection, city, d);
     }
@@ -183,7 +191,7 @@ public class MongoDBManager {
         if(startDate.isBefore(LocalDate.now()) || endDate.isBefore(LocalDate.now()))
             throw new IllegalArgumentException("Cannot fetch forecast weather for past days");
 
-        MongoCollection<Document> collection = database.getCollection("measureswfor");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.FORECAST_WEATHER.getName());
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1))
             FetchAdapter.getInstance().fetchForecastData(collection, city, d);
     }
@@ -191,12 +199,12 @@ public class MongoDBManager {
     public void testMeasureImport(City city) throws IOException {
         for(int i=0; i<15; i++) {
             FetchAdapter.getInstance()
-                    .fetchPollutionData(database.getCollection("measurespoll"), city, LocalDate.now().minusDays(5 + i));
+                    .fetchPollutionData(database.getCollection(AppCollection.POLLUTION.getName()), city, LocalDate.now().minusDays(5 + i));
             FetchAdapter.getInstance()
-                    .fetchHistoricalData(database.getCollection("measureswpast"), city, LocalDate.now().minusDays(5 + i));
+                    .fetchHistoricalData(database.getCollection(AppCollection.PAST_WEATHER.getName()), city, LocalDate.now().minusDays(5 + i));
         }
 
-        FetchAdapter.getInstance().fetchForecastData(database.getCollection("measureswfor"), city, LocalDate.now());
+        FetchAdapter.getInstance().fetchForecastData(database.getCollection(AppCollection.FORECAST_WEATHER.getName()), city, LocalDate.now());
     }
 
     private HashMap<City.CityName, ArrayList<MeasureValue>> parsePollutionList(
@@ -244,7 +252,7 @@ public class MongoDBManager {
 
         HashSet<LocalDate> resultSet = new HashSet<>();
 
-        MongoCollection<Document> collection = database.getCollection("measurespoll");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
         AggregateIterable<Document> aggregateIterable = collection.aggregate(pipeline);
         for(Document d : aggregateIterable)
             resultSet.add(d.get("date", LocalDateTime.class).toLocalDate());
@@ -257,7 +265,7 @@ public class MongoDBManager {
         if(startDate.compareTo(endDate) > 0)
             return null;
 
-        MongoCollection<Document> collection = database.getCollection("measurespoll");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
 
         List<Bson> pipeline = Arrays.asList(
                     match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
@@ -301,7 +309,7 @@ public class MongoDBManager {
         if(startDate.compareTo(endDate) > 0)
             return null;
 
-        MongoCollection<Document> collection = database.getCollection("measurespoll");
+        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
 
         List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart",
                 endDate), gte("periodEnd",
@@ -340,11 +348,11 @@ public class MongoDBManager {
     }
 
     public void dropAllCollections() {
-        database.getCollection("users").drop();
-        database.getCollection("locations").drop();
-        database.getCollection("measurespoll").drop();
-        database.getCollection("measureswfor").drop();
-        database.getCollection("measureswpast").drop();
+        database.getCollection(AppCollection.USERS.getName()).drop();
+        database.getCollection(AppCollection.LOCATIONS.getName()).drop();
+        database.getCollection(AppCollection.POLLUTION.getName()).drop();
+        database.getCollection(AppCollection.FORECAST_WEATHER.getName()).drop();
+        database.getCollection(AppCollection.PAST_WEATHER.getName()).drop();
     }
 
     public static void main(String[] args) throws IOException {
