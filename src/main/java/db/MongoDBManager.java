@@ -171,9 +171,21 @@ public class MongoDBManager {
     }
 
     public void loadPastWeatherFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
+        if(startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now()))
+            throw new IllegalArgumentException("Cannot fetch past weather for future days");
+
         MongoCollection<Document> collection = database.getCollection("measureswpast");
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1))
             FetchAdapter.getInstance().fetchHistoricalData(collection, city, d);
+    }
+
+    public void loadForecastWeatherFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
+        if(startDate.isBefore(LocalDate.now()) || endDate.isBefore(LocalDate.now()))
+            throw new IllegalArgumentException("Cannot fetch forecast weather for past days");
+
+        MongoCollection<Document> collection = database.getCollection("measureswfor");
+        for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1))
+            FetchAdapter.getInstance().fetchForecastData(collection, city, d);
     }
 
     public void testMeasureImport(City city) throws IOException {
@@ -184,7 +196,7 @@ public class MongoDBManager {
                     .fetchHistoricalData(database.getCollection("measureswpast"), city, LocalDate.now().minusDays(5 + i));
         }
 
-        FetchAdapter.getInstance().fetchForecastData(database.getCollection("measureswfor"), city);
+        FetchAdapter.getInstance().fetchForecastData(database.getCollection("measureswfor"), city, LocalDate.now());
     }
 
     private HashMap<City.CityName, ArrayList<MeasureValue>> parsePollutionList(

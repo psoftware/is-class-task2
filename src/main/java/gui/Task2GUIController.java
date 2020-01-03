@@ -105,6 +105,9 @@ public class Task2GUIController {
     private Button buttonFetchPastWeather;
 
     @FXML
+    private Button buttonFetchForecastWeather;
+
+    @FXML
     private DatePicker datepickerStart;
 
     @FXML
@@ -284,6 +287,13 @@ public class Task2GUIController {
                             (d1, d2) -> new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
                                             .loadPastWeatherFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue()),
                                     "Loading Past Weather Measures...", "Past Weather measures loading completed")
+                    )
+            );
+            buttonFetchForecastWeather.setOnAction(e ->
+                    changeTimePane(TimePaneType.DATERANGE,
+                            (d1, d2) -> new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
+                                            .loadForecastWeatherFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue()),
+                                    "Loading Forecast Weather Measures...", "Forecast Weather measures loading completed")
                     )
             );
         }

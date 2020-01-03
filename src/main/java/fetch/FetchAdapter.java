@@ -105,11 +105,10 @@ public class FetchAdapter {
         fetchWeatherData(collection, city, day, jsonDoc, "weatherCondition");
     }
 
-    public void fetchForecastData(MongoCollection<Document> collection, City city) throws IOException {
+    public void fetchForecastData(MongoCollection<Document> collection, City city, LocalDate day) throws IOException {
         // 1) Get hourly weather data for specified day
-        //TODO: possible race condition on LocalDate.now() between api call and next method call
-        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getDailyForecast(city.getCoords().lat, city.getCoords().lon);
-        fetchWeatherData(collection, city, LocalDate.now(), jsonDoc, "weatherForecast");
+        JSONObject jsonDoc = DarkSkyFetcher.getInstance().getForecastWeather(city.getCoords().lat, city.getCoords().lon, day);
+        fetchWeatherData(collection, city, day, jsonDoc, "weatherForecast");
     }
 
     public void fetchPollutionData(MongoCollection<Document> collection, City city, LocalDate day) throws IOException {

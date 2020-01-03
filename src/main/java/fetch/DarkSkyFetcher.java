@@ -11,6 +11,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,9 +51,7 @@ public class DarkSkyFetcher {
 
     }
 
-    public JSONObject getDailyForecast(Double latitude, Double longitude) throws IOException {
-        /*if(day.compareTo(LocalDate.now()) < 0)
-            throw new IllegalArgumentException("Cannot fetch forecast of past days");*/
+    public JSONObject getTodayForecast(Double latitude, Double longitude) throws IOException {
         // Do HTTP Request
         String jsonString;
         if(DEBUG_MODE)
@@ -64,19 +63,30 @@ public class DarkSkyFetcher {
         return new JSONObject(jsonString);
     }
 
-    public JSONObject getHistoricalWeather(Double latitude, Double longitude, LocalDate day) throws IOException {
-        if(day.compareTo(LocalDate.now()) >= 0)
-            throw new IllegalArgumentException("Cannot fetch real weather of future days");
-
+    private JSONObject getTimeMachineData(Double latitude, Double longitude, LocalDate day) throws IOException {
+        long timestamp = Timestamp.valueOf(day.atStartOfDay()).toInstant().getEpochSecond();
         // Do HTTP Request
         String jsonString;
         if(DEBUG_MODE)
             jsonString = FetchUtils.readResource("darkskyexample.json");
         else
-            jsonString =
-                    FetchUtils.doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+","+day.toEpochDay()+"?units=si");
+            jsonString = FetchUtils.doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+","+timestamp+"?units=si");
 
         // Parse JSON
         return new JSONObject(jsonString);
+    }
+
+    public JSONObject getForecastWeather(Double latitude, Double longitude, LocalDate day) throws IOException {
+        if(day.isBefore(LocalDate.now()))
+            throw new IllegalArgumentException("Cannot fetch forecast of past days");
+
+        return getTimeMachineData(latitude, longitude, day);
+    }
+
+    public JSONObject getHistoricalWeather(Double latitude, Double longitude, LocalDate day) throws IOException {
+        if(day.isAfter(LocalDate.now()) || day.isEqual(LocalDate.now()))
+            throw new IllegalArgumentException("Cannot fetch real weather of future days");
+
+        return getTimeMachineData(latitude, longitude, day);
     }
 }
