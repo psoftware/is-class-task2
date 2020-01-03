@@ -8,6 +8,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -96,7 +97,13 @@ public class Task2GUIController {
     private Button buttonShowAirPollution;
 
     @FXML
+    private AnchorPane separatorEnabled;
+
+    @FXML
     private Button buttonShowAirPollutionForecast;
+
+    @FXML
+    private AnchorPane separatorAdmin;
 
     @FXML
     private Button buttonFetchPollution;

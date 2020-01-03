@@ -71,7 +71,15 @@
                                 <Button fx:id="buttonShowWeatherHistory" text="Show Weather History" maxWidth="Infinity"/>
                                 <Button fx:id="buttonShowWeatherForecast" text="Show Weather Forecast" maxWidth="Infinity"/>
                                 <Button fx:id="buttonShowAirPollution" text="Show Air Pollution" maxWidth="Infinity"/>
+                                <AnchorPane fx:id="separatorEnabled" prefHeight="1.0">
+                                    <Separator AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" />
+                                    <Label alignment="CENTER" text="Enabled Users" textAlignment="CENTER" AnchorPane.bottomAnchor="4.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0" />
+                                </AnchorPane>
                                 <Button fx:id="buttonShowAirPollutionForecast" text="Show Air Pollution Forecast" maxWidth="Infinity"/>
+                                <AnchorPane fx:id="separatorAdmin" prefHeight="1.0">
+                                    <Separator AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" />
+                                    <Label alignment="CENTER" text="Administration" textAlignment="CENTER" AnchorPane.bottomAnchor="4.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0" />
+                                </AnchorPane>
                                 <Button fx:id="buttonFetchPollution" text="Fetch from API: Pollution" maxWidth="Infinity"/>
                                 <Button fx:id="buttonFetchPastWeather" text="Fetch from API: Past Weather" maxWidth="Infinity"/>
                                 <Button fx:id="buttonFetchForecastWeather" text="Fetch from API: Forecast Weather" maxWidth="Infinity"/>
