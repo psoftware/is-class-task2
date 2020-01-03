@@ -166,8 +166,14 @@ public class MongoDBManager {
 
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
         MongoCollection<Document> collection = database.getCollection("measurespoll");
-        for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate); d = d.plusDays(1))
+        for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1))
             FetchAdapter.getInstance().fetchPollutionData(collection, city, d);
+    }
+
+    public void loadPastWeatherFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
+        MongoCollection<Document> collection = database.getCollection("measureswpast");
+        for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1))
+            FetchAdapter.getInstance().fetchHistoricalData(collection, city, d);
     }
 
     public void testMeasureImport(City city) throws IOException {

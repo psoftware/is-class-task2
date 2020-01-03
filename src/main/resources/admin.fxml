@@ -73,6 +73,7 @@
                                 <Button fx:id="buttonShowAirPollution" text="Show Air Pollution" maxWidth="Infinity"/>
                                 <Button fx:id="buttonShowAirPollutionForecast" text="Show Air Pollution Forecast" maxWidth="Infinity"/>
                                 <Button fx:id="buttonFetchPollution" text="Fetch from API: Pollution" maxWidth="Infinity"/>
+                                <Button fx:id="buttonFetchPastWeather" text="Fetch from API: Past Weather" maxWidth="Infinity"/>
                             </children>
                         </VBox>
                     </content>
