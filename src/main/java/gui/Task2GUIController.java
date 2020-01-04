@@ -16,6 +16,8 @@ import javafx.util.Callback;
 import main.java.City;
 import main.java.User;
 import main.java.db.MongoDBManager;
+import main.java.db.SettingsManager;
+import main.java.fetch.DarkSkyFetcher;
 import main.java.measures.MeasureValue;
 
 import java.io.IOException;
@@ -138,6 +140,9 @@ public class Task2GUIController {
     @FXML
     private MenuItem reloadLocationsMenuItem;
 
+    @FXML
+    private MenuItem openSettings;
+
     private ArrayList<City> locations;
 
     private ArrayList<Marker> markers = new ArrayList<>();
@@ -154,7 +159,14 @@ public class Task2GUIController {
         locations = MongoDBManager.getInstance().getLocationList();
     }
 
+    public void loadSettingsFromFile() {
+        DarkSkyFetcher.getInstance().setApiKey(SettingsManager.MAINSETTINGS.<String>get("darksky","apiKey"));
+        DarkSkyFetcher.getInstance().setDebugMode(SettingsManager.MAINSETTINGS.<Boolean>get("darksky", "debugMode"));
+    }
+
     public void initMapAndControls(Projection projection, User user) {
+        loadSettingsFromFile();
+
         // set the custom css file for the MapView
         mapView.setCustomMapviewCssURL(getClass().getResource("/custom_mapview.css"));
 
@@ -312,6 +324,8 @@ public class Task2GUIController {
                 "Reloading locations...","Location reload completed"
         ));
 
+        openSettings.setOnAction(e -> showSettings());
+
         for (City c : locations) {
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
             Marker marker = new Marker(getClass().getResource("/Map-Marker.png"), -10, -20).setPosition(coords)
@@ -460,6 +474,23 @@ public class Task2GUIController {
             PopupController pc = fxmlLoader.getController();
             pc.showEnableDisable(enabledUserList, notenabledUserList);
             setupStage(root,"Enable Or Disable Users");
+        }
+
+        private void showSettings() {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("settings.fxml"));
+            Parent root = null;
+            try { root = fxmlLoader.load();
+            } catch (IOException e) { e.printStackTrace(); }
+
+            SettingsController controller = fxmlLoader.getController();
+
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.setTitle("Settings");
+
+            controller.initialize(stage, this::loadSettingsFromFile);
+            stage.show();
         }
 
         private void setupStage(Parent root, String title){

@@ -2,20 +2,11 @@ package main.java.fetch;
 
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.ProtocolException;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
 public class DarkSkyFetcher {
     private static DarkSkyFetcher INSTANCE = new DarkSkyFetcher();
@@ -44,8 +35,10 @@ public class DarkSkyFetcher {
     };
 
     private String apiKey = "";
+    private boolean debugMode = false;
 
-    private static final boolean DEBUG_MODE = true;
+    public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+    public void setDebugMode(boolean active) { this.debugMode = active; }
 
     private DarkSkyFetcher() {
 
@@ -54,7 +47,7 @@ public class DarkSkyFetcher {
     public JSONObject getTodayForecast(Double latitude, Double longitude) throws IOException {
         // Do HTTP Request
         String jsonString;
-        if(DEBUG_MODE)
+        if(debugMode)
             jsonString = FetchUtils.readResource("darkskyexample.json");
         else
             jsonString = FetchUtils.doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+"?units=si");
@@ -67,7 +60,7 @@ public class DarkSkyFetcher {
         long timestamp = Timestamp.valueOf(day.atStartOfDay()).toInstant().getEpochSecond();
         // Do HTTP Request
         String jsonString;
-        if(DEBUG_MODE)
+        if(debugMode)
             jsonString = FetchUtils.readResource("darkskyexample.json");
         else
             jsonString = FetchUtils.doGet("https://api.darksky.net/forecast/"+apiKey+"/"+latitude+","+longitude+","+timestamp+"?units=si");

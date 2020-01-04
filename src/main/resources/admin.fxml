@@ -30,6 +30,11 @@
                         <MenuItem fx:id="reloadLocationsMenuItem" mnemonicParsing="false" text="Reload Locations" />
                     </items>
                 </Menu>
+                <Menu mnemonicParsing="false" text="Application">
+                    <items>
+                        <MenuItem fx:id="openSettings" mnemonicParsing="false" text="Settings" />
+                    </items>
+                </Menu>
             </menus>
         </MenuBar>
     </top>
