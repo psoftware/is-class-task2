@@ -237,14 +237,26 @@ public class MongoDBManager {
         return cityMap;
     }
 
+    public HashSet<LocalDate> getPastWeatherAvailableDates(City city) {
+        return getAvailableDates(city, AppCollection.PAST_WEATHER, "weatherCondition");
+    }
+
+    public HashSet<LocalDate> getForecastWeatherAvailableDates(City city) {
+        return getAvailableDates(city, AppCollection.FORECAST_WEATHER, "weatherForecast");
+    }
+
     public HashSet<LocalDate> getPollutionAvailableDates(City city) {
+        return getAvailableDates(city, AppCollection.POLLUTION, "pollutionMeasurements");
+    }
+
+    public HashSet<LocalDate> getAvailableDates(City city, AppCollection appCollection, String arrayName) {
         List<Bson> pipeline = Arrays.asList(
                 match(and(eq("city", city.getCity()), eq("country", city.getCountry()),
                         eq("enabled", true))),
-                unwind("$pollutionMeasurements"),
-                project(fields(excludeId(), computed("year", eq("$year", "$pollutionMeasurements.datetime")),
-                        computed("month", eq("$month", "$pollutionMeasurements.datetime")),
-                        computed("day", eq("$dayOfMonth", "$pollutionMeasurements.datetime")))),
+                unwind("$"+arrayName+""),
+                project(fields(excludeId(), computed("year", eq("$year", "$"+arrayName+".datetime")),
+                        computed("month", eq("$month", "$"+arrayName+".datetime")),
+                        computed("day", eq("$dayOfMonth", "$"+arrayName+".datetime")))),
                 group(and(eq("year", "$year"), eq("month", "$month"), eq("day", "$day")),
                         sum("count", 1L)),
                 project(fields(excludeId(), computed("date", eq("$dateFromParts",
@@ -253,7 +265,7 @@ public class MongoDBManager {
 
         HashSet<LocalDate> resultSet = new HashSet<>();
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
+        MongoCollection<Document> collection = database.getCollection(appCollection.getName());
         AggregateIterable<Document> aggregateIterable = collection.aggregate(pipeline);
         for(Document d : aggregateIterable)
             resultSet.add(d.get("date", LocalDateTime.class).toLocalDate());

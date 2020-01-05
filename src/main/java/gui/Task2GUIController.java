@@ -280,9 +280,11 @@ public class Task2GUIController {
 
         // Base use cases
         buttonShowWeatherHistory.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherHistory(d1)));
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherHistory(d1),
+                        MongoDBManager.getInstance().getPastWeatherAvailableDates(getSelectedCity())));
         buttonShowWeatherForecast.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast(d1)));
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast(d1),
+                        MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity())));
         buttonShowAirPollution.setOnAction(
                 (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollution(d1),
                         MongoDBManager.getInstance().getPollutionAvailableDates(getSelectedCity())));
