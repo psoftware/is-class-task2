@@ -16,13 +16,13 @@ public class DarkSkyFetcher {
 
     public static final Map<String, String> MEASURE_UNITS  = new HashMap<String, String>() {
         {
-            put("sky", "literal");
+            put("sky", "");
             put("precipIntensity", "mm/h");
             put("precipProbability", "");
             put("apparentTemperature", "°C");
             put("temperature", "°C");
             put("dewPoint", "°C");
-            put("humidity", "percent");
+            put("humidity", "%");
             put("pressure", "hPa");
             put("windSpeed", "m/s");
             put("windGust", "m/s");
