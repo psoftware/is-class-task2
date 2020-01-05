@@ -21,7 +21,7 @@ public class FetchAdapter {
 
     public static final Map<String, String> WEATHERVALUES_NAMEMAP = new HashMap<String, String>() {
         {
-            put("sky","sky");
+            put("icon","sky");
             put("precipIntensity","precipIntensity");
             put("precipProbability","precipProbability");
             put("apparentTemperature","apparentTemperature");

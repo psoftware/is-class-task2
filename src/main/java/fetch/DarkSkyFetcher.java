@@ -30,7 +30,7 @@ public class DarkSkyFetcher {
             put("cloudCover", "%");
             put("uvIndex", "");
             put("visibility", "km");
-            put("ozone", "");
+            put("ozone", "DU");
         }
     };
 
