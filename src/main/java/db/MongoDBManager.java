@@ -11,6 +11,7 @@ import main.java.City;
 import main.java.User;
 import main.java.fetch.FetchAdapter;
 import main.java.measures.MeasureValue;
+import org.bson.BsonNull;
 import org.bson.BsonType;
 import org.bson.Document;
 import org.bson.codecs.BsonTypeClassMap;
@@ -341,6 +342,90 @@ public class MongoDBManager {
 
         AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
         return parsePollutionList(aggregateList, "dailymeasurements");
+    }
+
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyWeather(LocalDate startDate, LocalDate endDate) {
+        return getDailyWeather(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX));
+    }
+
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyWeather(LocalDateTime startDate, LocalDateTime endDate) {
+        List<Bson> pipeline = Arrays.asList(match(and(lte("periodStart", endDate), gte("periodEnd", startDate), eq("enabled", true))),
+                unwind("$weatherCondition"),
+                match(and(lte("weatherCondition.datetime", endDate), gte("weatherCondition.datetime", startDate))),
+                unwind("$weatherCondition.measurements"),
+                project(fields(include("city", "country", "coordinates"), excludeId(),
+                        computed("weatherCondition.year", eq("$year", "$weatherCondition.datetime")),
+                        computed("weatherCondition.month", eq("$month", "$weatherCondition.datetime")),
+                        computed("weatherCondition.day", eq("$dayOfMonth", "$weatherCondition.datetime")),
+                        computed("weatherCondition.hour", eq("$hour", "$weatherCondition.datetime")),
+                        computed("measurement", "$weatherCondition.measurements"))),
+                group(and(eq("city", "$city"), eq("country", "$country"),
+                        eq("year", "$weatherCondition.year"), eq("month", "$weatherCondition.month"),
+                        eq("day", "$weatherCondition.day"), eq("condition", "$measurement.name"),
+                        eq("unit", "$measurement.unit")), avg("avg", "$measurement.value"),
+                        push("list", and(eq("hour", "$weatherCondition.hour"),
+                                eq("sky", "$measurement.value")))),
+                new Document("$project", new Document("_id", "$_id").append("value", new Document("$cond", new Document("if",
+                        new Document("$eq", Arrays.asList("$avg", new BsonNull()))).append("then", "$list").append("else", "$avg")))),
+                group(and(eq("city", "$_id.city"), eq("country", "$_id.country")),
+                        push("measurements", and(eq("datetime", eq("$dateFromParts",
+                                and(eq("year", "$_id.year"), eq("month", "$_id.month"),
+                                        eq("day", "$_id.day")))), eq("condition", "$_id.condition"),
+                                eq("unit", "$_id.unit"), eq("value", "$value")))),
+                project(fields(excludeId(), computed("city", "$_id.city"),
+                        computed("country", "$_id.country"), include("measurements"))));
+
+        MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName());
+        AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
+        return parseWeatherList(aggregateList, "");
+    }
+
+    private HashMap<City.CityName, ArrayList<MeasureValue>> parseWeatherList(
+            AggregateIterable<Document> aggregateList, String arrayName) {
+        HashMap<City.CityName, ArrayList<MeasureValue>> cityMap = new HashMap<>();
+
+        for(Document d : aggregateList) { // iterate by city first
+            City.CityName city = new City.CityName(d.getString("country"), d.getString("city"));
+
+            // iterate dates (day only)
+            List<Document> daylist = d.getList("measurements", Document.class);
+            for(Document dd : daylist) {
+                LocalDateTime day = dd.get("datetime", LocalDateTime.class);
+                // iterate weather measures
+                MeasureValue m;
+                if(dd.getString("condition").equals("sky")) {
+                    HashMap<String, Integer> skyoccurences = new HashMap<>();
+                    List<Document> skylist = dd.getList("value", Document.class);
+
+                    // iterate sky statuses
+                    for(Document ddd : skylist) {
+                        String skystatus = ddd.get("sky", String.class);
+                        if(!skyoccurences.containsKey(skystatus))
+                            skyoccurences.put(skystatus, 0);
+                        skyoccurences.put(skystatus, skyoccurences.get(skystatus) + 1);
+                    }
+
+                    // found max skystatus occurrence
+                    int maxvalue = -1; String maxsky = "";
+                    for(Map.Entry<String, Integer> entry : skyoccurences.entrySet())
+                        if(entry.getValue() > maxvalue) {
+                            maxvalue = entry.getValue();
+                            maxsky = entry.getKey();
+                        }
+
+                    m = new MeasureValue(day, city, "sky", maxsky, "");
+                }
+                else
+                    m = new MeasureValue(day, city,
+                            dd.getString("condition"), dd.getDouble("value"), dd.getString("unit"));
+
+                if(!cityMap.containsKey(city))
+                    cityMap.put(city, new ArrayList<>());
+                cityMap.get(city).add(m);
+            }
+        }
+
+        return cityMap;
     }
 
     public void loadMeasure(LocalDateTime startDate, LocalDateTime endDate ) {

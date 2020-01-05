@@ -10,6 +10,7 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import main.java.User;
+import main.java.fetch.DarkSkyFetcher;
 import main.java.measures.MeasureValue;
 
 import java.text.DecimalFormat;
@@ -83,7 +84,37 @@ public class PopupController {
 
     }
 
-    public void showWeatherHistory() {
+    public void showWeatherHistory(ArrayList<MeasureValue> dailyPollution) {
+        final String[] POLLUTION_LIST = DarkSkyFetcher.MEASURE_UNITS.keySet().toArray(new String[1]);
 
+        HashMap<String, Integer> POLLUTION_MAP = new HashMap<>();
+        for(int i=0; i<POLLUTION_LIST.length; i++) {
+            enableDisablePane.add(new Label(POLLUTION_LIST[i]), 0, i+1);
+            POLLUTION_MAP.put(POLLUTION_LIST[i], i);
+        }
+
+        DecimalFormat df = new DecimalFormat("0.000");
+
+        // order by day
+        dailyPollution.sort((c1,c2) -> (c1.datetime.compareTo(c2.datetime) == 0) ?
+                c1.name.compareTo(c2.name) : c1.datetime.compareTo(c2.datetime));
+
+
+        LocalDate lastDate = null;
+        int j = 0;
+        for(MeasureValue m : dailyPollution) {
+            if(!m.datetime.toLocalDate().equals(lastDate)) {
+                lastDate = m.datetime.toLocalDate();
+                j++;
+                enableDisablePane.add(new Label(lastDate.toString()), j, 0);
+            }
+
+            String valuestring = (m.value instanceof Double) ? df.format(m.value) : m.value.toString();
+
+            if(!POLLUTION_MAP.containsKey(m.name))
+                System.out.println("Invalid key " + m.name);
+            else
+                enableDisablePane.add(new Label(valuestring + " " + m.unit), j, POLLUTION_MAP.get(m.name)+1);
+        }
     }
 }

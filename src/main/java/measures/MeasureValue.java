@@ -9,15 +9,19 @@ public class MeasureValue {
     public City.CityName cityName;
     public LocalDateTime datetime;
     public String name;
-    public Double value;
+    public Object value;
     public String unit;
 
-    public MeasureValue(LocalDateTime datetime, City.CityName cityName, String name, Double value, String unit) {
+    public MeasureValue(LocalDateTime datetime, City.CityName cityName, String name, Object value, String unit) {
         this.datetime = datetime;
         this.cityName = cityName;
         this.name = name;
         this.value = value;
         this.unit = unit;
+    }
+
+    public <T> T getValue() {
+        return (T)value;
     }
 
     @Override

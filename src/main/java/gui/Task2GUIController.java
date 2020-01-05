@@ -280,7 +280,7 @@ public class Task2GUIController {
 
         // Base use cases
         buttonShowWeatherHistory.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherHistory()));
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherHistory(d1)));
         buttonShowWeatherForecast.setOnAction(
                 (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast()));
         buttonShowAirPollution.setOnAction(
@@ -394,7 +394,11 @@ public class Task2GUIController {
             return closestCity;
         }
 
-        private void showWeatherHistory() {
+        private void showWeatherHistory(LocalDate refday) {
+            LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
+            HashMap<City.CityName, ArrayList<MeasureValue>> result =
+                    MongoDBManager.getInstance().getDailyWeather(startDate, endDate);
+            ArrayList<MeasureValue> dailyPollution = result.get(selectedCity.getCityName());
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("WeatherDialog.fxml"));
             Parent root = null;
             try {
@@ -404,7 +408,7 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showWeatherHistory();
+            pc.showWeatherHistory(dailyPollution);
             setupStage(root,"Weather History");
         }
 
