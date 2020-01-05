@@ -282,7 +282,7 @@ public class Task2GUIController {
         buttonShowWeatherHistory.setOnAction(
                 (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherHistory(d1)));
         buttonShowWeatherForecast.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast()));
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast(d1)));
         buttonShowAirPollution.setOnAction(
                 (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollution(d1),
                         MongoDBManager.getInstance().getPollutionAvailableDates(getSelectedCity())));
@@ -397,8 +397,8 @@ public class Task2GUIController {
         private void showWeatherHistory(LocalDate refday) {
             LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
-                    MongoDBManager.getInstance().getDailyWeather(startDate, endDate);
-            ArrayList<MeasureValue> dailyPollution = result.get(selectedCity.getCityName());
+                    MongoDBManager.getInstance().getDailyPastWeather(startDate, endDate);
+            ArrayList<MeasureValue> dailyWeather = result.get(selectedCity.getCityName());
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("WeatherDialog.fxml"));
             Parent root = null;
             try {
@@ -408,11 +408,15 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showWeatherHistory(dailyPollution);
+            pc.showWeather(dailyWeather);
             setupStage(root,"Weather History");
         }
 
-        private void showWeatherForecast() {
+        private void showWeatherForecast(LocalDate refday) {
+            LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
+            HashMap<City.CityName, ArrayList<MeasureValue>> result =
+                    MongoDBManager.getInstance().getDailyForecastWeather(startDate, endDate);
+            ArrayList<MeasureValue> dailyWeather = result.get(selectedCity.getCityName());
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("weatherDialog.fxml"));
             Parent root = null;
             try {
@@ -422,7 +426,7 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showWeatherForecast();
+            pc.showWeather(dailyWeather);
             setupStage(root,"Weather Forecast");
         }
 

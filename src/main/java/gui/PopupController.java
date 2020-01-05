@@ -80,11 +80,7 @@ public class PopupController {
         }
     }
 
-    public void showWeatherForecast() {
-
-    }
-
-    public void showWeatherHistory(ArrayList<MeasureValue> dailyPollution) {
+    public void showWeather(ArrayList<MeasureValue> dailyPollution) {
         final String[] POLLUTION_LIST = DarkSkyFetcher.MEASURE_UNITS.keySet().toArray(new String[1]);
 
         HashMap<String, Integer> POLLUTION_MAP = new HashMap<>();
