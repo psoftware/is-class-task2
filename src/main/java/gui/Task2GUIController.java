@@ -29,6 +29,7 @@ import java.lang.String;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 public class Task2GUIController {
     @FXML
@@ -196,7 +197,7 @@ public class Task2GUIController {
         changeTimePane(TimePaneType.HIDDEN, null);
     }
 
-    private Callback<DatePicker, DateCell> getFactoryForDatePickerAvalability(HashSet<LocalDate> dateSet) {
+    private Callback<DatePicker, DateCell> getFactoryForDatePickerAvalability(Predicate<LocalDate> dateAvailable) {
         return (datePicker) -> new DateCell() {
                     @Override public void updateItem(LocalDate itemDate, boolean empty) {
                         super.updateItem(itemDate, empty);
@@ -208,7 +209,7 @@ public class Task2GUIController {
                             return;
                         }
 
-                        if (dateSet.contains(itemDate) &&
+                        if (dateAvailable.test(itemDate) &&
                                 !(getStyleClass().contains("next-month") || getStyleClass().contains("previous-month"))
                         ) {
                             setDisable(false);
@@ -225,10 +226,16 @@ public class Task2GUIController {
     private enum TimePaneType{HIDDEN, DATERANGE, SINGLEDATE};
 
     private void changeTimePane(TimePaneType paneType, BiConsumer<LocalDate, LocalDate> onSubmit) {
-        changeTimePane(paneType, onSubmit, null);
+        changeTimePane(paneType, onSubmit, (Predicate<LocalDate>)null);
     }
 
     private void changeTimePane(TimePaneType paneType, BiConsumer<LocalDate, LocalDate> onSubmit, HashSet<LocalDate> dateSet) {
+        changeTimePane(paneType, onSubmit, dateSet::contains);
+    }
+
+    private void changeTimePane(TimePaneType paneType, BiConsumer<LocalDate, LocalDate> onSubmit,
+                                Predicate<LocalDate> dateAvailable)
+    {
         if(paneType == TimePaneType.DATERANGE && !leftControls.getPanes().contains(paneTimeRange)) {
             leftControls.getPanes().add(paneTimeRange);
             leftControls.getPanes().remove(paneSingleDay);
@@ -259,7 +266,8 @@ public class Task2GUIController {
                         onSubmit.accept(datepickerSingleDay.getValue(),null);
                 });
 
-                datepickerSingleDay.setDayCellFactory((dateSet == null) ? null : getFactoryForDatePickerAvalability(dateSet));
+                datepickerSingleDay.setDayCellFactory(
+                        (dateAvailable == null) ? null : getFactoryForDatePickerAvalability(dateAvailable));
                 break;
         }
     }
