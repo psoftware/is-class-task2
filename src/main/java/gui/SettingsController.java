@@ -20,6 +20,12 @@ public class SettingsController {
     RadioButton debugModeNo;
 
     @FXML
+    RadioButton localCacheYes;
+
+    @FXML
+    RadioButton localCacheNo;
+
+    @FXML
     Button buttonOk;
 
     @FXML
@@ -28,9 +34,13 @@ public class SettingsController {
     public void initialize(Stage stage, Runnable onEventOk) {
         darkskyApiKey.setText(SettingsManager.MAINSETTINGS.get("darksky", "apiKey"));
 
-        boolean selected = SettingsManager.MAINSETTINGS.get("darksky", "debugMode");
-        debugModeYes.setSelected(selected);
-        debugModeNo.setSelected(!selected);
+        Boolean debugModeSelected = SettingsManager.MAINSETTINGS.get("darksky", "debugMode");
+        debugModeYes.setSelected(debugModeSelected);
+        debugModeNo.setSelected(!debugModeSelected);
+
+        Boolean localCacheSelected = SettingsManager.MAINSETTINGS.get("darksky", "localCache");
+        localCacheYes.setSelected(localCacheSelected);
+        localCacheNo.setSelected(!localCacheSelected);
 
         buttonOk.setOnAction(e -> { saveSettings(); onEventOk.run(); stage.close(); });
         buttonCancel.setOnAction(e -> { stage.close();});
@@ -39,6 +49,7 @@ public class SettingsController {
     public void saveSettings() {
         SettingsManager.MAINSETTINGS.set("darksky", "apiKey", darkskyApiKey.getText());
         SettingsManager.MAINSETTINGS.set("darksky", "debugMode", debugModeYes.isSelected());
+        SettingsManager.MAINSETTINGS.set("darksky", "localCache", localCacheYes.isSelected());
 
         try {
             SettingsManager.MAINSETTINGS.saveToFile();

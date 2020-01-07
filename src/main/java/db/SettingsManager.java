@@ -44,7 +44,18 @@ public class SettingsManager {
     }
 
     public <T> T get(String section, String key) {
+        if(!config.has(section) || !getSection(section).has(key))
+            return null;
         return (T)getSection(section).get(key);
+    }
+
+    public <T> T getOrSetDefault(String section, String key, T defaultValue) {
+        T result = get(section, key);
+        if(result == null) {
+            set(section, key, defaultValue);
+            return defaultValue;
+        }
+        return result;
     }
 
     public <T> void set(String key, T value) {
@@ -52,6 +63,8 @@ public class SettingsManager {
     }
 
     public <T> void set(String section, String key, T value) {
+        if(!config.has(section))
+            config.put(section, new JSONObject());
         getSection(section).put(key, value);
     }
 

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,6 +44,10 @@ public class FetchUtils {
             throw new IllegalStateException("Got HTTP unexpected status " + responseCode + ": " + con.getResponseMessage()
                     + "\nfor url " + url);
         }
+    }
+
+    public static String readFile(String filename) throws IOException {
+        return new Scanner(Paths.get(filename), "UTF-8").useDelimiter("\\A").next();
     }
 
     public static String readResource(String filename) {

@@ -18,6 +18,15 @@
          </toggleGroup>
       </RadioButton>
       <RadioButton fx:id="debugModeNo" layoutX="188.0" layoutY="69.0" mnemonicParsing="false" text="No" toggleGroup="$debugmode" />
+
+      <Label layoutX="68.0" layoutY="98.0" text="Use cache" textAlignment="RIGHT" />
+      <RadioButton fx:id="localCacheYes" layoutX="135.0" layoutY="98.0" mnemonicParsing="false" selected="true" text="Yes">
+         <toggleGroup>
+            <ToggleGroup fx:id="localcache" />
+         </toggleGroup>
+      </RadioButton>
+      <RadioButton fx:id="localCacheNo" layoutX="188.0" layoutY="98.0" mnemonicParsing="false" text="No" toggleGroup="$localcache" />
+
       <Button fx:id="buttonOk" layoutX="345.0" layoutY="221.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="70.0" text="Ok" />
       <Button fx:id="buttonCancel" layoutX="267.0" layoutY="221.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="70.0" text="Cancel" />
    </children>

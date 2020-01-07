@@ -161,8 +161,9 @@ public class Task2GUIController {
     }
 
     public void loadSettingsFromFile() {
-        DarkSkyFetcher.getInstance().setApiKey(SettingsManager.MAINSETTINGS.<String>get("darksky","apiKey"));
-        DarkSkyFetcher.getInstance().setDebugMode(SettingsManager.MAINSETTINGS.<Boolean>get("darksky", "debugMode"));
+        DarkSkyFetcher.getInstance().setApiKey(SettingsManager.MAINSETTINGS.<String>getOrSetDefault("darksky","apiKey", ""));
+        DarkSkyFetcher.getInstance().setDebugMode(SettingsManager.MAINSETTINGS.<Boolean>getOrSetDefault("darksky", "debugMode", false));
+        DarkSkyFetcher.getInstance().enableLocalCache(SettingsManager.MAINSETTINGS.<Boolean>getOrSetDefault("darksky", "localCache",  false));
     }
 
     public void initMapAndControls(Projection projection, User user) {
