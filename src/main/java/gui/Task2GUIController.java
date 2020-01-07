@@ -100,6 +100,9 @@ public class Task2GUIController {
     private Button buttonShowAirPollution;
 
     @FXML
+    private Button buttonWeatherForecastReliability;
+
+    @FXML
     private AnchorPane separatorEnabled;
 
     @FXML
@@ -297,6 +300,11 @@ public class Task2GUIController {
         buttonShowAirPollution.setOnAction(
                 (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollution(d1),
                         MongoDBManager.getInstance().getPollutionAvailableDates(getSelectedCity())));
+        buttonWeatherForecastReliability.setOnAction(
+                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherReliability(d1),
+                        (d) -> MongoDBManager.getInstance().getPastWeatherAvailableDates(getSelectedCity()).contains(d) &&
+                                MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity()).contains(d)
+                ));
 
         // Regular additional use cases
         if(!user.getStatus().equals(User.Status.NOTENABLED))
@@ -439,6 +447,23 @@ public class Task2GUIController {
             PopupController pc = fxmlLoader.getController();
             pc.showWeather(dailyWeather);
             setupStage(root,"Weather Forecast");
+        }
+
+        private void showWeatherReliability(LocalDate refday) {
+            LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
+            ArrayList<MeasureValue> result =
+                    MongoDBManager.getInstance().getWeatherForecastReliability(startDate, endDate);
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("weatherDialog.fxml"));
+            Parent root = null;
+            try {
+                root = fxmlLoader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            PopupController pc = fxmlLoader.getController();
+            pc.showWeather(result);
+            setupStage(root,"Weather Forecast Reliability");
         }
 
         private void showAirPollution(LocalDate refday) {

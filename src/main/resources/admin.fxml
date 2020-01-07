@@ -76,6 +76,7 @@
                                 <Button fx:id="buttonShowWeatherHistory" text="Show Weather History" maxWidth="Infinity"/>
                                 <Button fx:id="buttonShowWeatherForecast" text="Show Weather Forecast" maxWidth="Infinity"/>
                                 <Button fx:id="buttonShowAirPollution" text="Show Air Pollution" maxWidth="Infinity"/>
+                                <Button fx:id="buttonWeatherForecastReliability" text="Show Weather Forecast Reliability" maxWidth="Infinity"/>
                                 <AnchorPane fx:id="separatorEnabled" prefHeight="1.0">
                                     <Separator AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" />
                                     <Label alignment="CENTER" text="Enabled Users" textAlignment="CENTER" AnchorPane.bottomAnchor="4.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0" />

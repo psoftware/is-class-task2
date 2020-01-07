@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.function.Function;
 
 import static com.mongodb.client.model.Accumulators.*;
 import static com.mongodb.client.model.Aggregates.*;
@@ -371,8 +372,6 @@ public class MongoDBManager {
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyForecastWeather(LocalDateTime startDate, LocalDateTime endDate) {
-        if(startDate.isBefore(LocalDateTime.now()) || endDate.isBefore(LocalDateTime.now()))
-            throw new IllegalArgumentException("cannot fetch forecast for past dates");
         return getDailyWeather(startDate, endDate, "weatherForecast", AppCollection.FORECAST_WEATHER);
     }
 
@@ -459,6 +458,52 @@ public class MongoDBManager {
 
     public void loadMeasure(LocalDateTime startDate, LocalDateTime endDate ) {
 
+    }
+
+    // TODO: we should add location range or location parameter to this function, and also to the others
+    public ArrayList<MeasureValue> getWeatherForecastReliability(LocalDate startDate, LocalDate endDate) {
+        return getWeatherForecastReliability(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX));
+    }
+
+    public ArrayList<MeasureValue> getWeatherForecastReliability(LocalDateTime startDate, LocalDateTime endDate) {
+        ArrayList<MeasureValue> resultList = new ArrayList<>();
+
+        HashMap<City.CityName, ArrayList<MeasureValue>> realWeather = getDailyPastWeather(startDate, endDate);
+        HashMap<City.CityName, ArrayList<MeasureValue>> forecastWeather = getDailyForecastWeather(startDate, endDate);
+
+        // oldForecast to HashMap<CityName, HashMap<MeasureTime, HashMap<MeasureType, MeasureValue>>
+        /*HashMap<City.CityName, HashMap<LocalDateTime, HashMap<String, MeasureValue>>> oldForecastHash = new HashMap<>();
+        for(Map.Entry<City.CityName, ArrayList<MeasureValue>> entry: oldForecast.entrySet())
+            for(MeasureValue m : entry.getValue()) {
+                if(!oldForecastHash.containsKey(entry.getKey()))
+                    oldForecastHash.put(entry.getKey(), new HashMap<>());
+                if(!oldForecastHash.get(entry.getKey()).containsKey(m.datetime))
+                    oldForecastHash.get(entry.getKey()).put(m.datetime, new HashMap<>());
+                oldForecastHash.get(entry.getKey()).get(m.datetime).put(m.name, m);
+            }*/
+
+        // oldForecast to HashMap<(CityName, datetime, measurename), MeasureValue>
+        Function<MeasureValue, Integer> getHash = (m) -> Objects.hash(m.cityName, m.datetime, m.name);
+        HashMap<Integer, MeasureValue> oldForecastHash = new HashMap<>();
+        for(Map.Entry<City.CityName, ArrayList<MeasureValue>> entry: realWeather.entrySet())
+            for(MeasureValue m : entry.getValue())
+                oldForecastHash.put(getHash.apply(m), m);
+
+        // iterate dailyForecast for computing measure errors
+        for(Map.Entry<City.CityName, ArrayList<MeasureValue>> entry: forecastWeather.entrySet())
+            for(MeasureValue mForecast : entry.getValue()) {
+                MeasureValue mReal = oldForecastHash.get(getHash.apply(mForecast));
+
+                // skip non numerical values
+                if(!(mReal.getValue() instanceof Double))
+                // mWeather should be also checked, however we are considering the same type of measure
+                    continue;
+
+                double relativeError = (mReal.<Double>getValue() - mForecast.<Double>getValue())/mReal.<Double>getValue();
+                resultList.add(new MeasureValue(mReal.datetime, mReal.cityName, mReal.name, relativeError, "%"));
+            }
+
+        return resultList;
     }
 
     public void dropAllCollections() {
