@@ -414,7 +414,11 @@ public class Task2GUIController {
         }
 
         private void showWeatherHistory(LocalDate refday) {
-            LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
+            LocalDate startDate = refday.minusDays(3);
+            LocalDate endDate = refday.plusDays(3);
+            if(endDate.isAfter(LocalDate.now()))
+                endDate = LocalDate.now();
+
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
                     MongoDBManager.getInstance().getDailyPastWeather(startDate, endDate);
             ArrayList<MeasureValue> dailyWeather = result.get(selectedCity.getCityName());
@@ -450,7 +454,11 @@ public class Task2GUIController {
         }
 
         private void showWeatherReliability(LocalDate refday) {
-            LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
+            LocalDate startDate = refday.minusDays(3);
+            LocalDate endDate = refday.plusDays(3);
+            if(endDate.isAfter(LocalDate.now()))
+                endDate = LocalDate.now();
+
             ArrayList<MeasureValue> result =
                     MongoDBManager.getInstance().getWeatherForecastReliability(startDate, endDate);
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("weatherDialog.fxml"));
@@ -467,7 +475,11 @@ public class Task2GUIController {
         }
 
         private void showAirPollution(LocalDate refday) {
-            LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
+            LocalDate startDate = refday.minusDays(3);
+            LocalDate endDate = refday.plusDays(3);
+            if(endDate.isAfter(LocalDate.now()))
+                endDate = LocalDate.now();
+
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
                     MongoDBManager.getInstance().getDailyPollution(startDate, endDate);
             ArrayList<MeasureValue> dailyPollution = result.get(selectedCity.getCityName());

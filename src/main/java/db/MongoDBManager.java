@@ -362,8 +362,8 @@ public class MongoDBManager {
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDateTime startDate, LocalDateTime endDate) {
-        if(startDate.isAfter(LocalDateTime.now()) || endDate.isAfter(LocalDateTime.now()))
-            throw new IllegalArgumentException("cannot fetch future past weather data");
+        /*if(startDate.isAfter(LocalDateTime.now()) || endDate.isAfter(LocalDateTime.now()))
+            throw new IllegalArgumentException("cannot fetch future past weather data");*/
         return getDailyWeather(startDate, endDate, "weatherCondition", AppCollection.PAST_WEATHER);
     }
 
@@ -493,6 +493,8 @@ public class MongoDBManager {
         for(Map.Entry<City.CityName, ArrayList<MeasureValue>> entry: forecastWeather.entrySet())
             for(MeasureValue mForecast : entry.getValue()) {
                 MeasureValue mReal = oldForecastHash.get(getHash.apply(mForecast));
+                if(mReal == null)
+                    continue;
 
                 // skip non numerical values
                 if(!(mReal.getValue() instanceof Double))
