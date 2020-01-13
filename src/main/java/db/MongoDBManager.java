@@ -21,6 +21,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -288,7 +289,7 @@ public class MongoDBManager {
                     match(and(lte("pollutionMeasurements.datetime", endDate),
                             gte("pollutionMeasurements.datetime", startDate))),
                     unwind("$pollutionMeasurements.measurements"),
-                    project(fields(include("city", "country", "coordinates"), excludeId(),
+                    project(fields(include("city", "country", "coordinfates"), excludeId(),
                             computed("pollutionMeasurements.year", eq("$year", "$pollutionMeasurements.datetime")),
                             computed("pollutionMeasurements.month", eq("$month", "$pollutionMeasurements.datetime")),
                             computed("pollutionMeasurements.day", eq("$dayOfMonth", "$pollutionMeasurements.datetime")),
@@ -508,6 +509,112 @@ public class MongoDBManager {
         return resultList;
     }
 
+
+    public ArrayList<MeasureValue> getPollutionForecast(LocalDateTime startDate, LocalDateTime endDate) {
+        ArrayList<MeasureValue> resultList = new ArrayList<>();
+
+        HashMap<City.CityName, ArrayList<MeasureValue>> currentPollution = getDailyPollution(LocalDateTime.now().minusDays(1), LocalDateTime.now());
+        HashMap<City.CityName, ArrayList<MeasureValue>> forecastWeather = getDailyForecastWeather(startDate, endDate);
+
+        // oldForecast to HashMap<CityName, HashMap<MeasureTime, HashMap<MeasureType, MeasureValue>>
+        /*HashMap<City.CityName, HashMap<LocalDateTime, HashMap<String, MeasureValue>>> oldForecastHash = new HashMap<>();
+        for(Map.Entry<City.CityName, ArrayList<MeasureValue>> entry: oldForecast.entrySet())
+            for(MeasureValue m : entry.getValue()) {
+                if(!oldForecastHash.containsKey(entry.getKey()))
+                    oldForecastHash.put(entry.getKey(), new HashMap<>());
+                if(!oldForecastHash.get(entry.getKey()).containsKey(m.datetime))
+                    oldForecastHash.get(entry.getKey()).put(m.datetime, new HashMap<>());
+                oldForecastHash.get(entry.getKey()).get(m.datetime).put(m.name, m);
+            }*/
+
+        // currentPollution to HashMap<(CityName, datetime, measurename), MeasureValue>
+        Function<MeasureValue, Integer> getHash = (m) -> Objects.hash(m.cityName, m.datetime, m.name);
+        HashMap<Integer, MeasureValue> pollutionMeasurementHash = new HashMap<>();
+        for(Map.Entry<City.CityName, ArrayList<MeasureValue>> entry: currentPollution.entrySet())
+            for(MeasureValue m : entry.getValue())
+                pollutionMeasurementHash.put(getHash.apply(m), m);
+
+        // forecastWeather to HashMap<(CityName, datetime, measurename), MeasureValue>
+        HashMap<Integer, MeasureValue> weatherForecastHash = new HashMap<>();
+        for(Map.Entry<City.CityName, ArrayList<MeasureValue>> entry: forecastWeather.entrySet())
+            for(MeasureValue m : entry.getValue())
+                weatherForecastHash.put(getHash.apply(m), m);
+
+
+        // compute pollutants values over the last 24h
+        HashMap<Integer, MeasureValue> pollutionMeasurementAverageHash = new HashMap<>();
+        for(Map.Entry<Integer, MeasureValue> entry : pollutionMeasurementHash.entrySet()) {
+            MeasureValue m = entry.getValue();
+            MeasureValue dualValue;
+            if (m.datetime.getDayOfMonth() == LocalDateTime.now().getDayOfMonth())
+                dualValue = pollutionMeasurementHash.get(getHash.apply(new MeasureValue(m.datetime.minusDays(1), m.cityName, m.name, m.value, m.unit)));
+            else
+                dualValue = pollutionMeasurementHash.get(getHash.apply(new MeasureValue(m.datetime.plusDays(1), m.cityName, m.name, m.value, m.unit)));
+            MeasureValue avgValue = new MeasureValue(LocalDateTime.now(), m.cityName, m.name, ((Double) m.value + (dualValue == null ? (Double) m.value : (Double) dualValue.value)/2), m.unit);
+            pollutionMeasurementAverageHash.put(getHash.apply(avgValue), avgValue);
+        }
+
+
+        for (Map.Entry<Integer, MeasureValue> pollutant : pollutionMeasurementAverageHash.entrySet()) {
+            MeasureValue mPoll = pollutant.getValue();
+            for (LocalDateTime i = startDate.toLocalDate().atStartOfDay(); i.getDayOfYear() <= endDate.getDayOfYear(); i = i.plusDays(1)){
+                MeasureValue forecast = null;
+                MeasureValue mWeather = null;
+                switch (mPoll.name) {
+                    case ("o3"):
+                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
+                        if (mWeather != null)
+                            forecast = computePollutantForecast(mPoll, mWeather);
+                        break;
+                    case ("no2"):
+                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
+                        if (mWeather != null)
+                            forecast = computePollutantForecast(mPoll, mWeather);
+                        break;
+                    case ("pm10"):
+                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
+                        if (mWeather != null)
+                            forecast = computePollutantForecast(mPoll, mWeather);
+                        break;
+                    case ("pm25"):
+                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
+                        if (mWeather != null)
+                            forecast = computePollutantForecast(mPoll, mWeather);
+                        break;
+                    case ("so2"):
+                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
+                        if (mWeather != null)
+                            forecast = computePollutantForecast(mPoll, mWeather);
+                        break;
+                    case ("co"):
+                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
+                        if (mWeather != null)
+                            forecast = computePollutantForecast(mPoll, mWeather);
+                        break;
+                    case ("bc"):
+                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
+                        if (mWeather != null)
+                            forecast = computePollutantForecast(mPoll, mWeather);
+                        break;
+                }
+                if (forecast != null)
+                    resultList.add(forecast);
+            }
+        }
+
+        return resultList;
+    }
+
+    private MeasureValue computePollutantForecast (MeasureValue p, MeasureValue w) {
+        MeasureValue m = new MeasureValue(w.datetime, p.cityName, p.name, p.value, p.unit);
+        if ((Double) w.value > 0.5)
+            m.value = (Double) m.value * (Double) w.value;
+        else
+            m.value = (Double) m.value / (Double) w.value;
+        return m;
+    }
+
+
     public void dropAllCollections() {
         database.getCollection(AppCollection.USERS.getName()).drop();
         database.getCollection(AppCollection.LOCATIONS.getName()).drop();
@@ -518,7 +625,7 @@ public class MongoDBManager {
 
     public static void main(String[] args) throws IOException {
         try {
-            MongoDBManager.getInstance().dropAllCollections();
+            //MongoDBManager.getInstance().dropAllCollections();
 
             // Reload locations
             MongoDBManager.getInstance().resetLocationList();
@@ -566,6 +673,9 @@ public class MongoDBManager {
             for(MeasureValue m : mres.get(cityRome.getCityName()))
                 System.out.println(m.toString());
 
+            ArrayList<MeasureValue> testGetPollutionForecast = MongoDBManager.getInstance().getPollutionForecast(LocalDateTime.now().plusDays(5), LocalDateTime.now().plusDays(7));
+            for (MeasureValue m : testGetPollutionForecast)
+                System.out.println(m.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
