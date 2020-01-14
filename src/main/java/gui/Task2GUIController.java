@@ -142,6 +142,9 @@ public class Task2GUIController {
     private MenuItem enableDisableMenu;
 
     @FXML
+    private MenuItem promoteDemoteMenu;
+
+    @FXML
     private MenuItem reloadLocationsMenuItem;
 
     @FXML
@@ -190,13 +193,14 @@ public class Task2GUIController {
             e.printStackTrace();
         }
 
-        mapView.initialize();
+        //mapView.initialize();
+        mapView.initialize(Configuration.builder().projection(projection).showZoomControls(true).build());
         mapView.initializedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 afterMapIsInitialized(user);
             }
         });
-        mapView.initialize(Configuration.builder().projection(projection).showZoomControls(true).build());
+
 
         changeTimePane(TimePaneType.HIDDEN, null);
     }
@@ -338,6 +342,7 @@ public class Task2GUIController {
 
         // menu events
         enableDisableMenu.setOnAction((event -> enableDisableUsers()));
+        promoteDemoteMenu.setOnAction((event -> promoteDemoteAdmin()));
         reloadLocationsMenuItem.setOnAction(event -> SimpleDialog.showIfErrorOrSuccess(
                 () -> MongoDBManager.getInstance().resetLocationList(),
                 "Reloading locations...","Location reload completed"
@@ -530,6 +535,24 @@ public class Task2GUIController {
             PopupController pc = fxmlLoader.getController();
             pc.showEnableDisable(enabledUserList, notenabledUserList);
             setupStage(root,"Enable Or Disable Users");
+        }
+
+        private void promoteDemoteAdmin(){
+            ArrayList<User> AdminsList = MongoDBManager.getInstance().getUsersByStatus(2);
+            ArrayList<User> notAdminsList = MongoDBManager.getInstance().getUsersByStatus(0);
+            notAdminsList.addAll(MongoDBManager.getInstance().getUsersByStatus(1));
+
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisableUser.fxml"));
+            Parent root = null;
+            try {
+                root = fxmlLoader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            PopupController pc = fxmlLoader.getController();
+            pc.showPromoteDemote(AdminsList, notAdminsList);
+            setupStage(root,"Promote Or Demote Admins");
         }
 
         private void showSettings() {

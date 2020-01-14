@@ -5,8 +5,8 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-
 <?import javafx.scene.layout.AnchorPane?>
+
 <BorderPane maxHeight="+Infinity" maxWidth="+Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0"
             prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="main.java.gui.Task2GUIController">
@@ -15,19 +15,20 @@
             <menus>
                 <Menu mnemonicParsing="false" text="Locations">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Add Location" />
-                        <MenuItem mnemonicParsing="false" text="Remove Location" />
+                        <MenuItem fx:id="requestLocationMenu" mnemonicParsing="false" text="Request Location" />
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Users">
                     <items>
                         <MenuItem fx:id="enableDisableMenu" mnemonicParsing="false" text="Enable / Disable User" />
-                        <MenuItem mnemonicParsing="false" text="Promote to / Demote from Admin" />
+                        <MenuItem fx:id="promoteDemoteMenu" mnemonicParsing="false" text="Promote to / Demote from Admin" />
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Admin">
                     <items>
                         <MenuItem fx:id="reloadLocationsMenuItem" mnemonicParsing="false" text="Reload Locations" />
+                        <MenuItem mnemonicParsing="false" text="Add Location" />
+                        <MenuItem mnemonicParsing="false" text="Remove Location" />
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Application">

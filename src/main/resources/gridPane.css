@@ -1,0 +1,19 @@
+* {
+    -fx-background-color: white;
+    -fx-padding: 10;
+    -fx-hgap: 7;
+    -fx-vgap: 3;
+    -fx-grid-lines-visible: false;
+    -fx-alignment: center;
+}
+
+.label-parameter, .username{
+    -fx-font-weight: bold;
+}
+
+.day-date{
+    -fx-font-weight: bold;
+}
+
+.weather-icon{
+}

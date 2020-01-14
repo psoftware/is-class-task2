@@ -4,19 +4,15 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane maxHeight="+Infinity" maxWidth="+Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0"
-        prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-        fx:controller="main.java.gui.PopupController">
-    <children>
-        <VBox layoutX="165.0" layoutY="100.0" prefHeight="200.0" prefWidth="270.0">
-            <children>
-                <GridPane fx:id="enableDisablePane" prefHeight="208.0" prefWidth="270.0">
-                    <children>
-                    </children>
-                </GridPane>
-            </children>
-        </VBox>
-    </children>
-</AnchorPane>
+<GridPane maxHeight="+Infinity" maxWidth="+Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="300.0"
+          prefWidth="300.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+          fx:id="enableDisablePane"
+          fx:controller="main.java.gui.PopupController"
+          stylesheets="@gridPane.css" >
+    <columnConstraints>
+        <ColumnConstraints halignment="CENTER"/>
+        <ColumnConstraints halignment="CENTER"/>
+    </columnConstraints>
+</GridPane>
 
 
