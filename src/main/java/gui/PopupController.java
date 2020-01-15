@@ -13,6 +13,7 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import main.java.User;
+import main.java.db.MongoDBManager;
 import main.java.fetch.DarkSkyFetcher;
 import main.java.measures.MeasureValue;
 
@@ -36,40 +37,50 @@ public class PopupController {
     }
 
     public void showEnableDisable(ArrayList<User> enabledUserList, ArrayList<User> notenabledUserList) {
+        enabledUserList.addAll(notenabledUserList);
+        ArrayList<User> allUsers = enabledUserList;
+
         int i = 0;
-        for (User u : enabledUserList) {
+        for (User u : allUsers) {
             Label user = new Label(u.getUsername());
             user.getStyleClass().add("username");
             enableDisablePane.add(user, 0, i);
-            enableDisablePane.add(new Button("Disable"), 1, i);
+            Button button = new Button(u.getStatus().equals(User.Status.ENABLED) ? "Disable" : "Enable");
+            button.setOnAction((event -> {
+                if (button.getText().equals("Disable")) {
+                    button.setText("Enable");
+                    MongoDBManager.getInstance().updateUserStatus(u, 1);
+                } else {
+                    button.setText("Disable");
+                    MongoDBManager.getInstance().updateUserStatus(u, 0);
+                }
+            }));
+            enableDisablePane.add(button, 1, i);
             i++;
-        }
-        int j = i + 1;
-        for (User u : notenabledUserList) {
-            Label user = new Label(u.getUsername());
-            user.getStyleClass().add("username");
-            enableDisablePane.add(user, 0, j);
-            enableDisablePane.add(new Button("Enable"), 1, j);
-            j++;
         }
     }
 
-    public void showPromoteDemote(ArrayList<User> AdminsList, ArrayList<User> notAdminsList) {
+    public void showPromoteDemote(ArrayList<User> adminsList, ArrayList<User> notAdminsList) {
+        adminsList.addAll(notAdminsList);
+        ArrayList<User> allUsers = adminsList;
+
         int i = 0;
-        for (User u : AdminsList) {
+        for (User u : allUsers) {
             Label user = new Label(u.getUsername());
             user.getStyleClass().add("username");
             enableDisablePane.add(user, 0, i);
-            enableDisablePane.add(new Button("Demote"), 1, i);
+            Button button = new Button(u.getStatus().equals(User.Status.ADMIN) ? "Demote" : "Promote");
+            button.setOnAction((event -> {
+                if (button.getText().equals("Demote")) {
+                    button.setText("Promote");
+                    MongoDBManager.getInstance().updateUserStatus(u, 0);
+                } else {
+                    button.setText("Demote");
+                    MongoDBManager.getInstance().updateUserStatus(u, 2);
+                }
+            }));
+            enableDisablePane.add(button, 1, i);
             i++;
-        }
-        int j = i + 1;
-        for (User u : notAdminsList) {
-            Label user = new Label(u.getUsername());
-            user.getStyleClass().add("username");
-            enableDisablePane.add(user, 0, j);
-            enableDisablePane.add(new Button("Promote"), 1, j);
-            j++;
         }
     }
 

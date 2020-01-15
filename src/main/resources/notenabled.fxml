@@ -50,6 +50,28 @@
                                 <Button fx:id="buttonShowWeatherHistory" text="Show Weather History" maxWidth="Infinity"/>
                                 <Button fx:id="buttonShowWeatherForecast" text="Show Weather Forecast" maxWidth="Infinity"/>
                                 <Button fx:id="buttonShowAirPollution" text="Show Air Pollution" maxWidth="Infinity"/>
+                                <Button fx:id="buttonWeatherForecastReliability" text="Show Weather Forecast Reliability" maxWidth="Infinity"/>
+                            </children>
+                        </VBox>
+                    </content>
+                </TitledPane>
+                <TitledPane fx:id="paneTimeRange" animated="true" text="Time Period">
+                    <content>
+                        <VBox spacing="10.0">
+                            <children>
+                                <DatePicker fx:id="datepickerStart" promptText="Start date" maxWidth="Infinity"/>
+                                <DatePicker fx:id="datepickerEnd" promptText="End date" maxWidth="Infinity"/>
+                                <Button fx:id="buttonSubmitTimeRange" text="Submit" maxWidth="Infinity"/>
+                            </children>
+                        </VBox>
+                    </content>
+                </TitledPane>
+                <TitledPane fx:id="paneSingleDay" animated="true" text="Pick Day">
+                    <content>
+                        <VBox spacing="10.0">
+                            <children>
+                                <DatePicker fx:id="datepickerSingleDay" maxWidth="Infinity"/>
+                                <Button fx:id="buttonSubmitSingleDay" text="Submit" maxWidth="Infinity"/>
                             </children>
                         </VBox>
                     </content>

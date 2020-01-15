@@ -313,7 +313,7 @@ public class Task2GUIController {
         // Regular additional use cases
         if(!user.getStatus().equals(User.Status.NOTENABLED))
             buttonShowAirPollutionForecast.setOnAction(
-                        (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast()));
+                    (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast()));
 
         // Admin additional use cases
         if(user.getStatus().equals(User.Status.ADMIN)) {
@@ -338,17 +338,16 @@ public class Task2GUIController {
                                     "Loading Forecast Weather Measures...", "Forecast Weather measures loading completed")
                     )
             );
+
+            // menu events
+            enableDisableMenu.setOnAction((event -> enableDisableUsers()));
+            promoteDemoteMenu.setOnAction((event -> promoteDemoteAdmin()));
+            reloadLocationsMenuItem.setOnAction(event -> SimpleDialog.showIfErrorOrSuccess(
+                    () -> MongoDBManager.getInstance().resetLocationList(),
+                    "Reloading locations...","Location reload completed"
+            ));
+            openSettings.setOnAction(e -> showSettings());
         }
-
-        // menu events
-        enableDisableMenu.setOnAction((event -> enableDisableUsers()));
-        promoteDemoteMenu.setOnAction((event -> promoteDemoteAdmin()));
-        reloadLocationsMenuItem.setOnAction(event -> SimpleDialog.showIfErrorOrSuccess(
-                () -> MongoDBManager.getInstance().resetLocationList(),
-                "Reloading locations...","Location reload completed"
-        ));
-
-        openSettings.setOnAction(e -> showSettings());
 
         for (City c : locations) {
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
