@@ -28,6 +28,9 @@ public class PopupController {
     @FXML
     private GridPane enableDisablePane;
 
+    @FXML
+    private GridPane measurementsPane;
+
 
     public PopupController() {
     }
@@ -78,7 +81,9 @@ public class PopupController {
         final String[] POLLUTION_LIST = {"o3", "no2", "pm10", "pm25", "so2", "co", "bc"};
         HashMap<String, Integer> POLLUTION_MAP = new HashMap<>();
         for(int i=0; i<POLLUTION_LIST.length; i++) {
-            enableDisablePane.add(new Label(POLLUTION_LIST[i]), 0, i+1);
+            Label param = new Label(POLLUTION_LIST[i]);
+            param.getStyleClass().add("label-parameter");
+            measurementsPane.add(param, 0, i+1);
             POLLUTION_MAP.put(POLLUTION_LIST[i], i);
         }
 
@@ -95,13 +100,15 @@ public class PopupController {
             if(!m.datetime.toLocalDate().equals(lastDate)) {
                 lastDate = m.datetime.toLocalDate();
                 j++;
-                enableDisablePane.add(new Label(lastDate.toString()), j, 0);
+                Label day = new Label(lastDate.toString());
+                day.getStyleClass().add("day-date");
+                measurementsPane.add(day, j, 0);
             }
 
             if(!POLLUTION_MAP.containsKey(m.name))
                 System.out.println("Invalid key " + m.name);
             else
-                enableDisablePane.add(new Label(df.format(m.value) + " " + m.unit), j, POLLUTION_MAP.get(m.name)+1);
+                measurementsPane.add(new Label(df.format(m.value) + " " + m.unit), j, POLLUTION_MAP.get(m.name)+1);
         }
     }
 
@@ -115,7 +122,7 @@ public class PopupController {
             Label param = new Label(input.replaceAll("(\\p{Ll})(\\p{Lu})","$1 $2"));
             param.getStyleClass().add("label-parameter");
 
-            enableDisablePane.add(param, 0, i+1);
+            measurementsPane.add(param, 0, i+1);
             PARAMETERS_MAP.put(PARAMETERS_LIST[i], i);
         }
 
@@ -132,9 +139,9 @@ public class PopupController {
             if(!m.datetime.toLocalDate().equals(lastDate)) {
                 lastDate = m.datetime.toLocalDate();
                 j++;
-                Label date = new Label(lastDate.toString());
-                date.getStyleClass().add("day-date");
-                enableDisablePane.add(date, j, 0);
+                Label day = new Label(lastDate.toString());
+                day.getStyleClass().add("day-date");
+                measurementsPane.add(day, j, 0);
             }
 
             String valuestring = (m.value instanceof Double) ? df.format(m.value) : m.value.toString();
@@ -183,9 +190,9 @@ public class PopupController {
                             break;
                     }
                     iv.setImage(i);
-                    enableDisablePane.add(iv, j, PARAMETERS_MAP.get(m.name) + 1);
+                    measurementsPane.add(iv, j, PARAMETERS_MAP.get(m.name) + 1);
                 }else
-                    enableDisablePane.add(new Label(valuestring + " " + m.unit), j, PARAMETERS_MAP.get(m.name) + 1);
+                    measurementsPane.add(new Label(valuestring + " " + m.unit), j, PARAMETERS_MAP.get(m.name) + 1);
 
         }
     }

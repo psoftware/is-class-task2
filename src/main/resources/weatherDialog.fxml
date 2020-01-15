@@ -11,7 +11,7 @@
         minHeight="-Infinity" minWidth="-Infinity"
         prefHeight="660.0" prefWidth="820.0"
         xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8"
-        fx:controller="main.java.gui.PopupController" fx:id="enableDisablePane"
+        fx:controller="main.java.gui.PopupController" fx:id="measurementsPane"
         stylesheets="@gridPane.css">
 
         <columnConstraints>
