@@ -683,6 +683,11 @@ public class MongoDBManager {
             ArrayList<MeasureValue> testGetPollutionForecast = MongoDBManager.getInstance().getPollutionForecast(LocalDateTime.now().plusDays(5), LocalDateTime.now().plusDays(7), cityRome);
             for (MeasureValue m : testGetPollutionForecast)
                 System.out.println(m.toString());
+
+            //test update user status
+            System.out.println("Update Test");
+            User user = new User("utente-s", "aldo", "aldo", User.Status.ENABLED);
+            MongoDBManager.getInstance().updateUserStatus(user, User.Status.ADMIN.ordinal());
         } catch (Exception e) {
             e.printStackTrace();
         }
