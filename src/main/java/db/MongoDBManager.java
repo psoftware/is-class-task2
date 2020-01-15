@@ -19,6 +19,7 @@ import org.bson.codecs.DocumentCodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -373,6 +374,26 @@ public class MongoDBManager {
         collection.updateOne(
                 and(eq("country", city.getCountry()), eq("city", city.getCity())),
                 new Document("$set", new Document("enabled", enabled)));
+    }
+
+    //TODO: aggiungere campo anabled alla classe city e la funzione getAllCitiesAsList di conseguenza
+    public ArrayList<City> getCitiesByStatus (boolean status) {
+        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        ArrayList<City> result = new ArrayList<>();
+
+        MongoCursor<Document> cursor = collection.find(eq("enabled", status)).iterator();
+        try {
+            while (cursor.hasNext()) {
+                Document d = cursor.next();
+                Document d1 = (Document) d.get("coordinates");
+                ArrayList<Double> coordinates = (ArrayList<Double>) d1.get("coordinates");
+                City c = new City(d.getString("country"), d.getString("city"), new City.Coords(coordinates.get(0), coordinates.get(1)));
+                result.add(c);
+            }
+        } finally {
+            cursor.close();
+            return result;
+        }
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDate startDate, LocalDate endDate) {
