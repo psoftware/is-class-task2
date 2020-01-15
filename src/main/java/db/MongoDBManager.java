@@ -365,6 +365,16 @@ public class MongoDBManager {
                 new Document("$set", new Document("status", status)));
     }
 
+
+    //TODO: aggiungere campo anabled alla classe city e la funzione getAllCitiesAsList di conseguenza
+    public void updateCityStatus (City city, boolean enabled) {
+        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+
+        collection.updateOne(
+                and(eq("country", city.getCountry()), eq("city", city.getCity())),
+                new Document("$set", new Document("enabled", enabled)));
+    }
+
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDate startDate, LocalDate endDate) {
         return getDailyPastWeather(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX));
     }
