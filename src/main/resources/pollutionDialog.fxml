@@ -9,7 +9,8 @@
 <GridPane
         gridLinesVisible="true" maxHeight="-Infinity" maxWidth="-Infinity"
         minHeight="-Infinity" minWidth="-Infinity"
-        prefHeight="400.0" prefWidth="600.0"
+        prefHeight="400.0" prefWidth="850.0"
         xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8"
-        fx:controller="main.java.gui.PopupController" fx:id="enableDisablePane"
+        fx:controller="main.java.gui.PopupController" fx:id="measurementsPane"
+        stylesheets="@gridPane.css"
 />

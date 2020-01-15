@@ -13,6 +13,7 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import main.java.User;
+import main.java.db.MongoDBManager;
 import main.java.fetch.DarkSkyFetcher;
 import main.java.measures.MeasureValue;
 
@@ -28,45 +29,58 @@ public class PopupController {
     @FXML
     private GridPane enableDisablePane;
 
+    @FXML
+    private GridPane measurementsPane;
+
 
     public PopupController() {
     }
 
     public void showEnableDisable(ArrayList<User> enabledUserList, ArrayList<User> notenabledUserList) {
+        enabledUserList.addAll(notenabledUserList);
+        ArrayList<User> allUsers = enabledUserList;
+
         int i = 0;
-        for (User u : enabledUserList) {
+        for (User u : allUsers) {
             Label user = new Label(u.getUsername());
             user.getStyleClass().add("username");
             enableDisablePane.add(user, 0, i);
-            enableDisablePane.add(new Button("Disable"), 1, i);
+            Button button = new Button(u.getStatus().equals(User.Status.ENABLED) ? "Disable" : "Enable");
+            button.setOnAction((event -> {
+                if (button.getText().equals("Disable")) {
+                    button.setText("Enable");
+                    MongoDBManager.getInstance().updateUserStatus(u, 1);
+                } else {
+                    button.setText("Disable");
+                    MongoDBManager.getInstance().updateUserStatus(u, 0);
+                }
+            }));
+            enableDisablePane.add(button, 1, i);
             i++;
-        }
-        int j = i + 1;
-        for (User u : notenabledUserList) {
-            Label user = new Label(u.getUsername());
-            user.getStyleClass().add("username");
-            enableDisablePane.add(user, 0, j);
-            enableDisablePane.add(new Button("Enable"), 1, j);
-            j++;
         }
     }
 
-    public void showPromoteDemote(ArrayList<User> AdminsList, ArrayList<User> notAdminsList) {
+    public void showPromoteDemote(ArrayList<User> adminsList, ArrayList<User> notAdminsList) {
+        adminsList.addAll(notAdminsList);
+        ArrayList<User> allUsers = adminsList;
+
         int i = 0;
-        for (User u : AdminsList) {
+        for (User u : allUsers) {
             Label user = new Label(u.getUsername());
             user.getStyleClass().add("username");
             enableDisablePane.add(user, 0, i);
-            enableDisablePane.add(new Button("Demote"), 1, i);
+            Button button = new Button(u.getStatus().equals(User.Status.ADMIN) ? "Demote" : "Promote");
+            button.setOnAction((event -> {
+                if (button.getText().equals("Demote")) {
+                    button.setText("Promote");
+                    MongoDBManager.getInstance().updateUserStatus(u, 0);
+                } else {
+                    button.setText("Demote");
+                    MongoDBManager.getInstance().updateUserStatus(u, 2);
+                }
+            }));
+            enableDisablePane.add(button, 1, i);
             i++;
-        }
-        int j = i + 1;
-        for (User u : notAdminsList) {
-            Label user = new Label(u.getUsername());
-            user.getStyleClass().add("username");
-            enableDisablePane.add(user, 0, j);
-            enableDisablePane.add(new Button("Promote"), 1, j);
-            j++;
         }
     }
 
@@ -78,7 +92,9 @@ public class PopupController {
         final String[] POLLUTION_LIST = {"o3", "no2", "pm10", "pm25", "so2", "co", "bc"};
         HashMap<String, Integer> POLLUTION_MAP = new HashMap<>();
         for(int i=0; i<POLLUTION_LIST.length; i++) {
-            enableDisablePane.add(new Label(POLLUTION_LIST[i]), 0, i+1);
+            Label param = new Label(POLLUTION_LIST[i]);
+            param.getStyleClass().add("label-parameter");
+            measurementsPane.add(param, 0, i+1);
             POLLUTION_MAP.put(POLLUTION_LIST[i], i);
         }
 
@@ -95,13 +111,15 @@ public class PopupController {
             if(!m.datetime.toLocalDate().equals(lastDate)) {
                 lastDate = m.datetime.toLocalDate();
                 j++;
-                enableDisablePane.add(new Label(lastDate.toString()), j, 0);
+                Label day = new Label(lastDate.toString());
+                day.getStyleClass().add("day-date");
+                measurementsPane.add(day, j, 0);
             }
 
             if(!POLLUTION_MAP.containsKey(m.name))
                 System.out.println("Invalid key " + m.name);
             else
-                enableDisablePane.add(new Label(df.format(m.value) + " " + m.unit), j, POLLUTION_MAP.get(m.name)+1);
+                measurementsPane.add(new Label(df.format(m.value) + " " + m.unit), j, POLLUTION_MAP.get(m.name)+1);
         }
     }
 
@@ -115,7 +133,7 @@ public class PopupController {
             Label param = new Label(input.replaceAll("(\\p{Ll})(\\p{Lu})","$1 $2"));
             param.getStyleClass().add("label-parameter");
 
-            enableDisablePane.add(param, 0, i+1);
+            measurementsPane.add(param, 0, i+1);
             PARAMETERS_MAP.put(PARAMETERS_LIST[i], i);
         }
 
@@ -132,9 +150,9 @@ public class PopupController {
             if(!m.datetime.toLocalDate().equals(lastDate)) {
                 lastDate = m.datetime.toLocalDate();
                 j++;
-                Label date = new Label(lastDate.toString());
-                date.getStyleClass().add("day-date");
-                enableDisablePane.add(date, j, 0);
+                Label day = new Label(lastDate.toString());
+                day.getStyleClass().add("day-date");
+                measurementsPane.add(day, j, 0);
             }
 
             String valuestring = (m.value instanceof Double) ? df.format(m.value) : m.value.toString();
@@ -183,9 +201,9 @@ public class PopupController {
                             break;
                     }
                     iv.setImage(i);
-                    enableDisablePane.add(iv, j, PARAMETERS_MAP.get(m.name) + 1);
+                    measurementsPane.add(iv, j, PARAMETERS_MAP.get(m.name) + 1);
                 }else
-                    enableDisablePane.add(new Label(valuestring + " " + m.unit), j, PARAMETERS_MAP.get(m.name) + 1);
+                    measurementsPane.add(new Label(valuestring + " " + m.unit), j, PARAMETERS_MAP.get(m.name) + 1);
 
         }
     }
