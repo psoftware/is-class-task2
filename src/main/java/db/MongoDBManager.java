@@ -21,7 +21,6 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -316,11 +315,11 @@ public class MongoDBManager {
         return parsePollutionList(aggregateList, "hourlymeasurements");
     }
 
-    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPollution(LocalDate startDate, LocalDate endDate) {
-        return getDailyPollution(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX));
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPollution(LocalDate startDate, LocalDate endDate, City selectedCity) {
+        return getDailyPollution(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX), selectedCity);
     }
 
-    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPollution(LocalDateTime startDate, LocalDateTime endDate) {
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPollution(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
         if(startDate.compareTo(endDate) > 0)
             return null;
 
@@ -328,7 +327,7 @@ public class MongoDBManager {
 
         List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart",
                 endDate), gte("periodEnd",
-                startDate), eq("enabled", true))),
+                startDate), eq("enabled", true), eq("city", selectedCity.getCity()), eq("country", selectedCity.getCountry()))),
                 unwind("$pollutionMeasurements"),
                 match(and(lte("pollutionMeasurements.datetime", endDate),
                         gte("pollutionMeasurements.datetime", startDate))),
@@ -356,6 +355,14 @@ public class MongoDBManager {
 
         AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
         return parsePollutionList(aggregateList, "dailymeasurements");
+    }
+
+    public void updateUserStatus (User user, int status) {
+        MongoCollection<Document> collection = database.getCollection(AppCollection.USERS.getName());
+
+        collection.updateOne(
+                eq("username", user.getUsername()),
+                new Document("$set", new Document("status", status)));
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDate startDate, LocalDate endDate) {
@@ -510,10 +517,10 @@ public class MongoDBManager {
     }
 
 
-    public ArrayList<MeasureValue> getPollutionForecast(LocalDateTime startDate, LocalDateTime endDate) {
+    public ArrayList<MeasureValue> getPollutionForecast(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
         ArrayList<MeasureValue> resultList = new ArrayList<>();
 
-        HashMap<City.CityName, ArrayList<MeasureValue>> currentPollution = getDailyPollution(LocalDateTime.now().minusDays(1), LocalDateTime.now());
+        HashMap<City.CityName, ArrayList<MeasureValue>> currentPollution = getDailyPollution(LocalDateTime.now().minusDays(1), LocalDateTime.now(), selectedCity);
         HashMap<City.CityName, ArrayList<MeasureValue>> forecastWeather = getDailyForecastWeather(startDate, endDate);
 
         // oldForecast to HashMap<CityName, HashMap<MeasureTime, HashMap<MeasureType, MeasureValue>>
@@ -669,11 +676,11 @@ public class MongoDBManager {
             for(MeasureValue m : mres.get(cityRome.getCityName()))
                 System.out.println(m.toString());
             System.out.println("Test getDailyPollution:");
-            mres = MongoDBManager.getInstance().getDailyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5));
+            mres = MongoDBManager.getInstance().getDailyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5), cityRome);
             for(MeasureValue m : mres.get(cityRome.getCityName()))
                 System.out.println(m.toString());
 
-            ArrayList<MeasureValue> testGetPollutionForecast = MongoDBManager.getInstance().getPollutionForecast(LocalDateTime.now().plusDays(5), LocalDateTime.now().plusDays(7));
+            ArrayList<MeasureValue> testGetPollutionForecast = MongoDBManager.getInstance().getPollutionForecast(LocalDateTime.now().plusDays(5), LocalDateTime.now().plusDays(7), cityRome);
             for (MeasureValue m : testGetPollutionForecast)
                 System.out.println(m.toString());
         } catch (Exception e) {
