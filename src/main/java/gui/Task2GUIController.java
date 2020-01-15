@@ -486,7 +486,7 @@ public class Task2GUIController {
                 endDate = LocalDate.now();
 
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
-                    MongoDBManager.getInstance().getDailyPollution(startDate, endDate);
+                    MongoDBManager.getInstance().getDailyPollution(startDate, endDate, selectedCity);
             ArrayList<MeasureValue> dailyPollution = result.get(selectedCity.getCityName());
             if(dailyPollution == null) {
                 SimpleDialog.showErrorDialog("No pollution data for this location and time!");

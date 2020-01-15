@@ -37,7 +37,7 @@ public class DarkSkyFetcher {
         }
     };
 
-    private String apiKey = "";
+    private String apiKey = "d0f1f3201e47ecb8edfeca5e36379bac";
     private boolean debugMode = false;
     private boolean useLocalCache = false;
     private LocalCache localCache;
