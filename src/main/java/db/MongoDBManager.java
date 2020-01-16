@@ -547,6 +547,9 @@ public class MongoDBManager {
         return resultList;
     }
 
+    public ArrayList<MeasureValue> getPollutionForecast(LocalDate startDate, LocalDate endDate, City selectedCity) {
+        return getPollutionForecast(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX), selectedCity);
+    }
 
     public ArrayList<MeasureValue> getPollutionForecast(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
         ArrayList<MeasureValue> resultList = new ArrayList<>();
@@ -599,38 +602,9 @@ public class MongoDBManager {
                 MeasureValue forecast = null;
                 MeasureValue mWeather = null;
                 switch (mPoll.name) {
-                    case ("o3"):
-                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
-                        if (mWeather != null)
-                            forecast = computePollutantForecast(mPoll, mWeather);
-                        break;
-                    case ("no2"):
-                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
-                        if (mWeather != null)
-                            forecast = computePollutantForecast(mPoll, mWeather);
-                        break;
-                    case ("pm10"):
-                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
-                        if (mWeather != null)
-                            forecast = computePollutantForecast(mPoll, mWeather);
-                        break;
-                    case ("pm25"):
-                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
-                        if (mWeather != null)
-                            forecast = computePollutantForecast(mPoll, mWeather);
-                        break;
-                    case ("so2"):
-                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
-                        if (mWeather != null)
-                            forecast = computePollutantForecast(mPoll, mWeather);
-                        break;
-                    case ("co"):
-                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
-                        if (mWeather != null)
-                            forecast = computePollutantForecast(mPoll, mWeather);
-                        break;
-                    case ("bc"):
-                        mWeather = weatherForecastHash.get(getHash.apply(new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
+                    case ("o3"): case ("no2"): case ("pm10"): case ("pm25"): case ("so2"): case ("co"): case ("bc"):
+                        mWeather = weatherForecastHash.get(getHash.apply(
+                                new MeasureValue(i, mPoll.cityName, "humidity", mPoll.value, mPoll.unit)));
                         if (mWeather != null)
                             forecast = computePollutantForecast(mPoll, mWeather);
                         break;

@@ -311,9 +311,10 @@ public class Task2GUIController {
                 ));
 
         // Regular additional use cases
-        if(!user.getStatus().equals(User.Status.NOTENABLED))
+        if(!user.getStatus().equals(User.Status.NOTENABLED)) // TODO: hashset is computed at each date, we should precompute it
             buttonShowAirPollutionForecast.setOnAction(
-                    (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast()));
+                    (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast(d1),
+                            (d) -> MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity()).contains(d)));
 
         // Admin additional use cases
         if(user.getStatus().equals(User.Status.ADMIN)) {
@@ -505,17 +506,22 @@ public class Task2GUIController {
             setupStage(root,"Air Pollution");
         }
 
-        private void showAirPollutionForecast() {
+        private void showAirPollutionForecast(LocalDate start) {
+            LocalDate startDate = start.plusDays(1);
+            LocalDate endDate = start.plusDays(7);
+            if(start.isBefore(LocalDate.now()))
+                return;
+
+            ArrayList<MeasureValue> forecastPollution =
+                    MongoDBManager.getInstance().getPollutionForecast(startDate, endDate, selectedCity);
+
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("pollutionDialog.fxml"));
             Parent root = null;
-            try {
-                root = fxmlLoader.load();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            try { root = fxmlLoader.load();
+            } catch (IOException e) { e.printStackTrace(); }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showAirPollutionForecast();
+            pc.showAirPollution(forecastPollution);
             setupStage(root,"Air Pollution Forecast");
         }
 
