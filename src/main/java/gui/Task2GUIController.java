@@ -296,25 +296,35 @@ public class Task2GUIController {
 
         // Base use cases
         buttonShowWeatherHistory.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherHistory(d1),
-                        MongoDBManager.getInstance().getPastWeatherAvailableDates(getSelectedCity())));
+                (event) -> {
+                    HashSet<LocalDate> pastWDates = MongoDBManager.getInstance().getPastWeatherAvailableDates(getSelectedCity());
+                    changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherHistory(d1), pastWDates);
+                });
         buttonShowWeatherForecast.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast(d1),
-                        MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity())));
+                (event) -> {
+                    HashSet<LocalDate> forecastWDates = MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity());
+                    changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherForecast(d1), forecastWDates);
+                });
         buttonShowAirPollution.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollution(d1),
-                        MongoDBManager.getInstance().getPollutionAvailableDates(getSelectedCity())));
+                (event) -> {
+                    HashSet<LocalDate> pollutionDates = MongoDBManager.getInstance().getPollutionAvailableDates(getSelectedCity());
+                    changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollution(d1), pollutionDates);
+                });
         buttonWeatherForecastReliability.setOnAction(
-                (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherReliability(d1),
-                        (d) -> MongoDBManager.getInstance().getPastWeatherAvailableDates(getSelectedCity()).contains(d) &&
-                                MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity()).contains(d)
-                ));
+                (event) -> {
+                    HashSet<LocalDate> pastWeatherDates = MongoDBManager.getInstance().getPastWeatherAvailableDates(getSelectedCity());
+                    HashSet<LocalDate> forecastWDates = MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity());
+                    changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showWeatherReliability(d1),
+                        (d) -> pastWeatherDates.contains(d) && forecastWDates.contains(d));
+                    });
 
         // Regular additional use cases
-        if(!user.getStatus().equals(User.Status.NOTENABLED)) // TODO: hashset is computed at each date, we should precompute it
+        if(!user.getStatus().equals(User.Status.NOTENABLED))
             buttonShowAirPollutionForecast.setOnAction(
-                    (event) -> changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast(d1),
-                            (d) -> MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity()).contains(d)));
+                    (event) -> {
+                        HashSet<LocalDate> forecastDates = MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity());
+                        changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast(d1), forecastDates);
+                    });
 
         // Admin additional use cases
         if(user.getStatus().equals(User.Status.ADMIN)) {
