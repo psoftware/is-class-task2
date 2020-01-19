@@ -48,9 +48,6 @@ public class FetchAdapter {
 
     private void fetchWeatherData(MongoCollection<Document> collection, City city, LocalDate day,
                                       JSONObject jsonDoc, String arrayname) throws IOException {
-        LocalDateTime[] weekrange = FetchUtils.getWeekPeriod(day);
-        LocalDateTime weekStart = weekrange[0];
-        LocalDateTime weekEnd = weekrange[1];
 
         List<Document> mongoHourlyList = new ArrayList<>();
         TimeZone timezone = TimeZone.getTimeZone(jsonDoc.getString("timezone"));
@@ -78,6 +75,14 @@ public class FetchAdapter {
             mongoHourlyList.add(hourDoc);
         }
 
+        addDataToCollection(collection, city, day, arrayname, mongoHourlyList);
+    }
+
+    private void addDataToCollection (MongoCollection<Document> collection, City city, LocalDate day,
+                                      String arrayname, List<Document> mongoHourlyList) {
+        LocalDateTime[] weekrange = FetchUtils.getWeekPeriod(day);
+        LocalDateTime weekStart = weekrange[0];
+        LocalDateTime weekEnd = weekrange[1];
 
         // Create query and update BSON Documents
         Document updatedoc = new Document()
@@ -89,58 +94,71 @@ public class FetchAdapter {
                         .append("enabled", true)
                         .append(arrayname, mongoHourlyList));
 
-        Document query = new Document();
-        query.append("country",city.getCountry()).append("city", city.getCity())
+        //filter document
+        Document filterDoc = new Document("city", city.getCity())
+                .append("country", city.getCountry())
                 .append("periodStart", weekStart)
                 .append("periodEnd", weekEnd);
 
         // Update or insert (upsert) collection on MongoDB
-        System.out.println(FetchUtils.toJson(query));
+        System.out.println(FetchUtils.toJson(filterDoc));
         System.out.println(FetchUtils.toJson(updatedoc));
 
-        if (collection.updateOne(query, updatedoc, new UpdateOptions().upsert(true)).getMatchedCount() > 0) {
-             //array of operation to execute in bulk
-             List<UpdateOneModel<Document>> operations = new ArrayList<UpdateOneModel<Document>>();
-             //filter document
-             Document filterDoc = new Document("city", city.getCity())
-                                       .append("country", city.getCountry())
-                                       .append("periodStart", weekStart)
-                                       .append("periodEnd", weekEnd);
+        if (collection.updateOne(filterDoc, updatedoc, new UpdateOptions().upsert(true)).getMatchedCount() > 0) {
+            //array of operation to execute in bulk
+            List<UpdateOneModel<Document>> operations = new ArrayList<UpdateOneModel<Document>>();
 
-             for (Document measurement : mongoHourlyList) {
-                 LocalDateTime datetime = (LocalDateTime) measurement.get("datetime");
-                 List<Document> newMeasures = (List<Document>) measurement.get("measurements");
+            for (Document measurement : mongoHourlyList) {
+                LocalDateTime datetime = (LocalDateTime) measurement.get("datetime");
+                List<Document> newMeasures = (List<Document>) measurement.get("measurements");
 
-                 //the measurement must exist
-                 Document findMeasurementDoc = new Document("city", city.getCity())
-                         .append("country", city.getCountry())
-                         .append("periodStart", weekStart)
-                         .append("periodEnd", weekEnd)
-                         .append(arrayname + ".datetime", datetime);
+                //the measurement must exist
+                Document findMeasurementDoc = new Document("city", city.getCity())
+                        .append("country", city.getCountry())
+                        .append("periodStart", weekStart)
+                        .append("periodEnd", weekEnd);
 
-                 //if the measurement not exist add it
-                 if (!collection.find(findMeasurementDoc).iterator().hasNext()) {
+                String location = (String) measurement.get("location");
+                if (arrayname.equals("pollutionMeasurements"))
+                    findMeasurementDoc.append(arrayname, new Document("$elemMatch", new Document("datetime", datetime).append("location", location)));
+                else
+                    findMeasurementDoc.append(arrayname + ".datetime", datetime);
+
+                //if the measurement not exist add it
+                if (!collection.find(findMeasurementDoc).iterator().hasNext()) {
                     Document addMeasurementDoc = new Document("$push", new Document(arrayname, new Document("datetime", datetime).append("measurements", newMeasures)));
                     operations.add(new UpdateOneModel<>(filterDoc, addMeasurementDoc));
-                 }
-                 else {
-                     List<Document> arrayFilters = new ArrayList<Document>();
-                     arrayFilters.add(new Document("t.datetime", datetime));
-                     UpdateOptions options = new UpdateOptions().upsert(true).arrayFilters(arrayFilters);
+                }
+                else {
+                    List<Document> arrayFilters = new ArrayList<Document>();
+                    switch (arrayname) {
+                        case "pollutionMeasurements":
+                                arrayFilters.add(new Document("t.datetime", datetime).append("t.location", location));
+                            break;
+                        default: arrayFilters.add(new Document("t.datetime", datetime));
+                            break;
+                    }
+                    UpdateOptions options = new UpdateOptions().arrayFilters(arrayFilters);
 
-                     //pull existing measures
-                     List<String> measurementNames = new ArrayList<>();
-                     for (Document dd: newMeasures) {
-                         measurementNames.add((String) dd.get("name"));
-                     }
-                     Document pullDoc = new Document("$pull", new Document(arrayname+".$[t].measurements", new Document("name", new Document("$in", measurementNames))));
-                     operations.add(new UpdateOneModel<>(filterDoc, pullDoc, options));
+                /*
+                    //pull existing measures
+                    List<String> measurementNames = new ArrayList<>();
+                    for (Document dd: newMeasures) {
+                        measurementNames.add((String) dd.get("name"));
+                    }
+                    Document pullDoc = new Document("$pull", new Document(arrayname+".$[t].measurements", new Document("name", new Document("$in", measurementNames))));
+                    operations.add(new UpdateOneModel<>(filterDoc, pullDoc, options));
 
-                     //push new measures
-                     Document pushDoc = new Document("$push", new Document(arrayname+".$[t].measurements", new Document("$each", newMeasures)));
-                     operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
-                 }
-             }
+                    //push new measures
+                    Document pushDoc = new Document("$push", new Document(arrayname+".$[t].measurements", new Document("$each", newMeasures)));
+                    operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
+
+                 */
+                    //push new measures
+                    Document pushDoc = new Document("$set", new Document(arrayname+".$[t].measurements", newMeasures));
+                    operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
+                }
+            }
 
             if (operations.size() > 0)
                 collection.bulkWrite((List<? extends WriteModel<? extends Document>>) operations);
@@ -207,6 +225,8 @@ public class FetchAdapter {
             }
         }
 
+        addDataToCollection(collection, city, day, "pollutionMeasurements", finalReadingList);
+/*
         Document updatedoc = new Document()
                 .append("$setOnInsert", new Document()
                         .append("country",city.getCountry()).append("city", city.getCity())
@@ -227,6 +247,8 @@ public class FetchAdapter {
         System.out.println(FetchUtils.toJson(query));
         System.out.println(FetchUtils.toJson(updatedoc));
         collection.updateOne(query, updatedoc, new UpdateOptions().upsert(true));
+
+ */
     }
 
     // Use this method to generate city list to batch on geocode.xyz
@@ -335,15 +357,15 @@ public class FetchAdapter {
         JsonWriterSettings jsonWriterSettings = JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build();
         try {
             City cityRome = new City("IT", "Roma", new City.Coords(41.902782, 12.4963));
-            MongoCollection<Document> collection = MongoDBManager.getInstance().database.getCollection("measureswpast");
+            //MongoCollection<Document> collection = MongoDBManager.getInstance().database.getCollection("measureswpoll");
 
             Document mongoDoc;
             //System.out.println("Test 1 (fetchHistoricalData):");
-            //mongoDoc = FetchAdapter.getInstance().fetchHistoricalData(LocalDate.now().minusDays(1), cityRome);
+            //FetchAdapter.getInstance().fetchPollutionData(collection, cityRome, LocalDate.now().minusDays(10));
             //System.out.println(mongoDoc.toJson(jsonWriterSettings));
 
             System.out.println("Test 2 (fetchForecastData):");
-            FetchAdapter.getInstance().fetchForecastData(collection, cityRome, LocalDate.now());
+            //FetchAdapter.getInstance().fetchForecastData(collection, cityRome, LocalDate.now());
             //System.out.println(mongoDoc.toJson(jsonWriterSettings));
 
             //System.out.println("Test 3 (fetchPollutionData):");
@@ -351,8 +373,8 @@ public class FetchAdapter {
             //System.out.println(mongoDoc.toJson(jsonWriterSettings));
 
             //System.out.println("Test 4 (fetchAllCities):");
-            //List<Document> cityList = FetchAdapter.getInstance().fetchAllCities();
-            //cityList.forEach(d -> System.out.println(d.toJson(jsonWriterSettings)));
+            List<Document> cityList = FetchAdapter.getInstance().fetchAllCities();
+            cityList.forEach(d -> System.out.println(d.toJson(jsonWriterSettings)));
 
         } catch(IOException e) {
             e.printStackTrace();
