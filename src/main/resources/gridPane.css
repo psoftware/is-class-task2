@@ -37,3 +37,8 @@
     -fx-text-fill: #242d35;
     -fx-font-size: 14px;
 }
+
+.title{
+    -fx-font-weight: bold;
+    -fx-font-size: 24;
+}

@@ -11,6 +11,7 @@ import main.java.gui.Task2GUIController;
 import java.io.IOException;
 
 public class Task2 extends Application {
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -43,7 +44,7 @@ public class Task2 extends Application {
         final Task2GUIController controller = fxmlLoader.<Task2GUIController>getController();
         final Projection projection = getParameters().getUnnamed().contains("wgs84")
                 ? Projection.WGS_84 : Projection.WEB_MERCATOR;
-        controller.initMapAndControls(projection, user);
+        controller.initMapAndControls(projection, user, controller);
 
         Scene scene = new Scene(root, 800, 600);
         stage.setTitle("Map Page");

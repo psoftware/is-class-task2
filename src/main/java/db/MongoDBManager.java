@@ -284,7 +284,9 @@ public class MongoDBManager {
 
         List<Bson> pipeline = Arrays.asList(
                     match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
-                        eq("enabled", true), eq("city", selectedCity.getCity()), eq("country", selectedCity.getCountry()))),
+                        eq("enabled", true),
+                            eq("city", selectedCity.getCity()),
+                            eq("country", selectedCity.getCountry()))),
                     unwind("$pollutionMeasurements"),
                     match(and(lte("pollutionMeasurements.datetime", endDate),
                             gte("pollutionMeasurements.datetime", startDate))),

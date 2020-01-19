@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.lang.String;
 import java.util.HashMap;
@@ -162,6 +163,8 @@ public class Task2GUIController {
 
     private static final Coordinate coordDefault = new Coordinate(41.0, 16.0);
 
+    public static Task2GUIController INSTANCE = null;
+
     public Task2GUIController() {
         locations = MongoDBManager.getInstance().getLocationList();
     }
@@ -172,7 +175,8 @@ public class Task2GUIController {
         DarkSkyFetcher.getInstance().enableLocalCache(SettingsManager.MAINSETTINGS.<Boolean>getOrSetDefault("darksky", "localCache",  false));
     }
 
-    public void initMapAndControls(Projection projection, User user) {
+    public void initMapAndControls(Projection projection, User user, Task2GUIController instance) {
+        INSTANCE = instance;
         loadSettingsFromFile();
 
         // set the custom css file for the MapView
@@ -437,7 +441,7 @@ public class Task2GUIController {
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
                     MongoDBManager.getInstance().getDailyPastWeather(startDate, endDate, selectedCity);
             ArrayList<MeasureValue> dailyWeather = result.get(selectedCity.getCityName());
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("WeatherDialog.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));
             Parent root = null;
             try {
                 root = fxmlLoader.load();
@@ -455,7 +459,7 @@ public class Task2GUIController {
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
                     MongoDBManager.getInstance().getDailyForecastWeather(startDate, endDate, selectedCity);
             ArrayList<MeasureValue> dailyWeather = result.get(selectedCity.getCityName());
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("weatherDialog.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));
             Parent root = null;
             try {
                 root = fxmlLoader.load();
@@ -476,7 +480,7 @@ public class Task2GUIController {
 
             ArrayList<MeasureValue> result =
                     MongoDBManager.getInstance().getWeatherForecastReliability(startDate, endDate, selectedCity);
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("weatherDialog.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));
             Parent root = null;
             try {
                 root = fxmlLoader.load();
@@ -503,7 +507,7 @@ public class Task2GUIController {
                 return;
             }
 
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("pollutionDialog.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));
             Parent root = null;
             try {
                 root = fxmlLoader.load();
@@ -516,6 +520,42 @@ public class Task2GUIController {
             setupStage(root,"Air Pollution");
         }
 
+        public void showHourlyPollution(LocalDateTime start){
+            LocalDateTime end = start.plusDays(1);
+
+            HashMap<City.CityName, ArrayList<MeasureValue>> hourlyPollution =
+                    MongoDBManager.getInstance().getHourlyPollution(start, end, selectedCity);
+            ArrayList<MeasureValue> hPollution = hourlyPollution.get(selectedCity.getCityName());
+
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));
+            Parent root = null;
+            try { root = fxmlLoader.load();
+            } catch (IOException e) { e.printStackTrace(); }
+
+            PopupController pc = fxmlLoader.getController();
+            pc.showHourlyPollution(hPollution);
+            setupStage(root,"Hourly Air Pollution");
+
+        }
+
+    public void showHourlyWeather(LocalDateTime start){
+        LocalDateTime end = start.plusDays(1);
+
+        HashMap<City.CityName, ArrayList<MeasureValue>> hourlyWeather =
+                MongoDBManager.getInstance().getHourlyPollution(start, end, selectedCity);
+        ArrayList<MeasureValue> hWeather = hourlyWeather.get(selectedCity.getCityName());
+
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));
+        Parent root = null;
+        try { root = fxmlLoader.load();
+        } catch (IOException e) { e.printStackTrace(); }
+
+        PopupController pc = fxmlLoader.getController();
+        pc.showHourlyWeather(hWeather);
+        setupStage(root,"Hourly Weather");
+
+    }
+
         private void showAirPollutionForecast(LocalDate start) {
             LocalDate startDate = start.plusDays(1);
             LocalDate endDate = start.plusDays(7);
@@ -525,7 +565,7 @@ public class Task2GUIController {
             ArrayList<MeasureValue> forecastPollution =
                     MongoDBManager.getInstance().getPollutionForecast(startDate, endDate, selectedCity);
 
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("pollutionDialog.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));
             Parent root = null;
             try { root = fxmlLoader.load();
             } catch (IOException e) { e.printStackTrace(); }
