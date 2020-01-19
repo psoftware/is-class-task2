@@ -435,7 +435,7 @@ public class Task2GUIController {
                 endDate = LocalDate.now();
 
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
-                    MongoDBManager.getInstance().getDailyPastWeather(startDate, endDate);
+                    MongoDBManager.getInstance().getDailyPastWeather(startDate, endDate, selectedCity);
             ArrayList<MeasureValue> dailyWeather = result.get(selectedCity.getCityName());
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("WeatherDialog.fxml"));
             Parent root = null;
@@ -453,7 +453,7 @@ public class Task2GUIController {
         private void showWeatherForecast(LocalDate refday) {
             LocalDate startDate = refday.minusDays(3), endDate = refday.plusDays(3);
             HashMap<City.CityName, ArrayList<MeasureValue>> result =
-                    MongoDBManager.getInstance().getDailyForecastWeather(startDate, endDate);
+                    MongoDBManager.getInstance().getDailyForecastWeather(startDate, endDate, selectedCity);
             ArrayList<MeasureValue> dailyWeather = result.get(selectedCity.getCityName());
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("weatherDialog.fxml"));
             Parent root = null;
@@ -475,7 +475,7 @@ public class Task2GUIController {
                 endDate = LocalDate.now();
 
             ArrayList<MeasureValue> result =
-                    MongoDBManager.getInstance().getWeatherForecastReliability(startDate, endDate);
+                    MongoDBManager.getInstance().getWeatherForecastReliability(startDate, endDate, selectedCity);
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("weatherDialog.fxml"));
             Parent root = null;
             try {

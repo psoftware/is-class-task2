@@ -276,7 +276,7 @@ public class MongoDBManager {
     }
 
     // TODO: hours are not discretized
-    public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyPollution(LocalDateTime startDate, LocalDateTime endDate) {
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyPollution(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
         if(startDate.compareTo(endDate) > 0)
             return null;
 
@@ -284,7 +284,7 @@ public class MongoDBManager {
 
         List<Bson> pipeline = Arrays.asList(
                     match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
-                        eq("enabled", true))),
+                        eq("enabled", true), eq("city", selectedCity.getCity()), eq("country", selectedCity.getCountry()))),
                     unwind("$pollutionMeasurements"),
                     match(and(lte("pollutionMeasurements.datetime", endDate),
                             gte("pollutionMeasurements.datetime", startDate))),
@@ -396,27 +396,28 @@ public class MongoDBManager {
         }
     }
 
-    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDate startDate, LocalDate endDate) {
-        return getDailyPastWeather(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX));
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDate startDate, LocalDate endDate, City selectedCity) {
+        return getDailyPastWeather(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX), selectedCity);
     }
 
-    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDateTime startDate, LocalDateTime endDate) {
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
         /*if(startDate.isAfter(LocalDateTime.now()) || endDate.isAfter(LocalDateTime.now()))
             throw new IllegalArgumentException("cannot fetch future past weather data");*/
-        return getDailyWeather(startDate, endDate, "weatherCondition", AppCollection.PAST_WEATHER);
+        return getDailyWeather(startDate, endDate, "weatherCondition", AppCollection.PAST_WEATHER, selectedCity);
     }
 
-    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyForecastWeather(LocalDate startDate, LocalDate endDate) {
-        return getDailyForecastWeather(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX));
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyForecastWeather(LocalDate startDate, LocalDate endDate, City selectedCity) {
+        return getDailyForecastWeather(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX), selectedCity);
     }
 
-    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyForecastWeather(LocalDateTime startDate, LocalDateTime endDate) {
-        return getDailyWeather(startDate, endDate, "weatherForecast", AppCollection.FORECAST_WEATHER);
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyForecastWeather(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
+        return getDailyWeather(startDate, endDate, "weatherForecast", AppCollection.FORECAST_WEATHER, selectedCity);
     }
 
     private HashMap<City.CityName, ArrayList<MeasureValue>> getDailyWeather(LocalDateTime startDate, LocalDateTime endDate,
-                                                                            String arrayName, AppCollection collectionName) {
-        List<Bson> pipeline = Arrays.asList(match(and(lte("periodStart", endDate), gte("periodEnd", startDate), eq("enabled", true))),
+                                                                            String arrayName, AppCollection collectionName, City selectedCity) {
+        List<Bson> pipeline = Arrays.asList(match(and(lte("periodStart", endDate), gte("periodEnd", startDate), eq("enabled", true),
+                eq("city", selectedCity.getCity()), eq("country", selectedCity.getCountry()))),
                 unwind("$"+arrayName),
                 match(and(lte(arrayName+".datetime", endDate), gte(arrayName+".datetime", startDate))),
                 unwind("$"+arrayName+".measurements"),
@@ -500,15 +501,15 @@ public class MongoDBManager {
     }
 
     // TODO: we should add location range or location parameter to this function, and also to the others
-    public ArrayList<MeasureValue> getWeatherForecastReliability(LocalDate startDate, LocalDate endDate) {
-        return getWeatherForecastReliability(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX));
+    public ArrayList<MeasureValue> getWeatherForecastReliability(LocalDate startDate, LocalDate endDate, City selectedCity) {
+        return getWeatherForecastReliability(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX), selectedCity);
     }
 
-    public ArrayList<MeasureValue> getWeatherForecastReliability(LocalDateTime startDate, LocalDateTime endDate) {
+    public ArrayList<MeasureValue> getWeatherForecastReliability(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
         ArrayList<MeasureValue> resultList = new ArrayList<>();
 
-        HashMap<City.CityName, ArrayList<MeasureValue>> realWeather = getDailyPastWeather(startDate, endDate);
-        HashMap<City.CityName, ArrayList<MeasureValue>> forecastWeather = getDailyForecastWeather(startDate, endDate);
+        HashMap<City.CityName, ArrayList<MeasureValue>> realWeather = getDailyPastWeather(startDate, endDate, selectedCity);
+        HashMap<City.CityName, ArrayList<MeasureValue>> forecastWeather = getDailyForecastWeather(startDate, endDate, selectedCity);
 
         // oldForecast to HashMap<CityName, HashMap<MeasureTime, HashMap<MeasureType, MeasureValue>>
         /*HashMap<City.CityName, HashMap<LocalDateTime, HashMap<String, MeasureValue>>> oldForecastHash = new HashMap<>();
@@ -555,7 +556,7 @@ public class MongoDBManager {
         ArrayList<MeasureValue> resultList = new ArrayList<>();
 
         HashMap<City.CityName, ArrayList<MeasureValue>> currentPollution = getDailyPollution(LocalDateTime.now().minusDays(1), LocalDateTime.now(), selectedCity);
-        HashMap<City.CityName, ArrayList<MeasureValue>> forecastWeather = getDailyForecastWeather(startDate, endDate);
+        HashMap<City.CityName, ArrayList<MeasureValue>> forecastWeather = getDailyForecastWeather(startDate, endDate, selectedCity);
 
         // oldForecast to HashMap<CityName, HashMap<MeasureTime, HashMap<MeasureType, MeasureValue>>
         /*HashMap<City.CityName, HashMap<LocalDateTime, HashMap<String, MeasureValue>>> oldForecastHash = new HashMap<>();
@@ -677,11 +678,16 @@ public class MongoDBManager {
             // fetch pollution by hours and days
             System.out.println("Test getHourlyPollution:");
             HashMap<City.CityName, ArrayList<MeasureValue>> mres;
-            mres = MongoDBManager.getInstance().getHourlyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5));
+            mres = MongoDBManager.getInstance().getHourlyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5), cityRome);
             for(MeasureValue m : mres.get(cityRome.getCityName()))
                 System.out.println(m.toString());
             System.out.println("Test getDailyPollution:");
             mres = MongoDBManager.getInstance().getDailyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5), cityRome);
+            for(MeasureValue m : mres.get(cityRome.getCityName()))
+                System.out.println(m.toString());
+
+            System.out.println("Test getDailyWeather:");
+            mres = MongoDBManager.getInstance().getDailyForecastWeather(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5), cityRome);
             for(MeasureValue m : mres.get(cityRome.getCityName()))
                 System.out.println(m.toString());
 
