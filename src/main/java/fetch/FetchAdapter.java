@@ -52,8 +52,8 @@ public class FetchAdapter {
         return new Document().append("name", name).append("value", measurement).append("unit", uom);
     }
 
-    private void fetchWeatherData(MongoCollection<Document> collection, City city, LocalDate day,
-                                      JSONObject jsonDoc, String arrayname) throws IOException {
+    private List<Document> fetchWeatherData(City city, LocalDate day,
+                                            JSONObject jsonDoc) throws IOException {
 
         List<Document> mongoHourlyList = new ArrayList<>();
         TimeZone timezone = TimeZone.getTimeZone(jsonDoc.getString("timezone"));
@@ -81,136 +81,22 @@ public class FetchAdapter {
             mongoHourlyList.add(hourDoc);
         }
 
-        addDataToCollection(collection, city, day, arrayname, mongoHourlyList);
+        return mongoHourlyList;
     }
 
-    private void addDataToCollection (MongoCollection<Document> collection, City city, LocalDate day,
-                                      String arrayname, List<Document> mongoHourlyList) {
-        //start a client session
-        ClientSession clientSession = client.startSession();
-
-        // define options to use for the transaction
-        TransactionOptions txnOptions = TransactionOptions.builder()
-                .readPreference(ReadPreference.primary())
-                .readConcern(ReadConcern.MAJORITY)      // study better
-                .writeConcern(WriteConcern.MAJORITY)    // study better
-                .build();
-
-        //define the sequence of operations to perform inside the transaction
-        TransactionBody txnBody = new TransactionBody<String>() {
-            @Override
-                public String execute() {
-                LocalDateTime[] weekrange = FetchUtils.getWeekPeriod(day);
-                LocalDateTime weekStart = weekrange[0];
-                LocalDateTime weekEnd = weekrange[1];
-
-                // Create query and update BSON Documents
-                Document updatedoc = new Document()
-                        .append("$setOnInsert", new Document()
-                                .append("country",city.getCountry()).append("city", city.getCity())
-                                .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
-                                .append("periodStart", weekStart)
-                                .append("periodEnd", weekEnd)
-                                .append("enabled", true)
-                                .append(arrayname, mongoHourlyList));
-
-                //filter document
-                Document filterDoc = new Document("city", city.getCity())
-                        .append("country", city.getCountry())
-                        .append("periodStart", weekStart)
-                        .append("periodEnd", weekEnd);
-
-                // Update or insert (upsert) collection on MongoDB
-                System.out.println(FetchUtils.toJson(filterDoc));
-                System.out.println(FetchUtils.toJson(updatedoc));
-
-                if (collection.updateOne(filterDoc, updatedoc, new UpdateOptions().upsert(true)).getMatchedCount() > 0) {
-                    //array of operation to execute in bulk
-                    List<UpdateOneModel<Document>> operations = new ArrayList<UpdateOneModel<Document>>();
-
-                    for (Document measurement : mongoHourlyList) {
-                        LocalDateTime datetime = (LocalDateTime) measurement.get("datetime");
-                        List<Document> newMeasures = (List<Document>) measurement.get("measurements");
-
-                        //the measurement must exist
-                        Document findMeasurementDoc = new Document("city", city.getCity())
-                                .append("country", city.getCountry())
-                                .append("periodStart", weekStart)
-                                .append("periodEnd", weekEnd);
-
-                        String location = (String) measurement.get("location");
-                        if (arrayname.equals("pollutionMeasurements"))
-                            findMeasurementDoc.append(arrayname, new Document("$elemMatch", new Document("datetime", datetime).append("location", location)));
-                        else
-                            findMeasurementDoc.append(arrayname + ".datetime", datetime);
-
-                        //if the measurement not exist add it
-                        if (!collection.find(findMeasurementDoc).iterator().hasNext()) {
-                            Document addMeasurementDoc = new Document("$push", new Document(arrayname, new Document("datetime", datetime).append("measurements", newMeasures)));
-                            operations.add(new UpdateOneModel<>(filterDoc, addMeasurementDoc));
-                        }
-                        else {
-                            List<Document> arrayFilters = new ArrayList<Document>();
-                            switch (arrayname) {
-                                case "pollutionMeasurements":
-                                        arrayFilters.add(new Document("t.datetime", datetime).append("t.location", location));
-                                    break;
-                                default: arrayFilters.add(new Document("t.datetime", datetime));
-                                    break;
-                            }
-                            UpdateOptions options = new UpdateOptions().arrayFilters(arrayFilters);
-
-                        /*
-                            //pull existing measures
-                            List<String> measurementNames = new ArrayList<>();
-                            for (Document dd: newMeasures) {
-                                measurementNames.add((String) dd.get("name"));
-                            }
-                            Document pullDoc = new Document("$pull", new Document(arrayname+".$[t].measurements", new Document("name", new Document("$in", measurementNames))));
-                            operations.add(new UpdateOneModel<>(filterDoc, pullDoc, options));
-
-                            //push new measures
-                            Document pushDoc = new Document("$push", new Document(arrayname+".$[t].measurements", new Document("$each", newMeasures)));
-                            operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
-
-                         */
-                            //push new measures
-                            Document pushDoc = new Document("$set", new Document(arrayname+".$[t].measurements", newMeasures));
-                            operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
-                        }
-                    }
-
-                    if (operations.size() > 0)
-                        collection.bulkWrite((List<? extends WriteModel<? extends Document>>) operations);
-                }
-                return "Inserted without duplicates";
-            }
-        };
-
-        try {
-            clientSession.withTransaction(txnBody, txnOptions);
-            clientSession.commitTransaction();
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            clientSession.abortTransaction();
-        } finally {
-            clientSession.close();
-        }
-    }
-
-    public void fetchHistoricalData(MongoCollection<Document> collection, City city, LocalDate day) throws IOException {
+    public List<Document> fetchHistoricalData(City city, LocalDate day) throws IOException {
         // 1) Get hourly weather data for specified day
         JSONObject jsonDoc = DarkSkyFetcher.getInstance().getHistoricalWeather(city.getCoords().lat, city.getCoords().lon, day);
-        fetchWeatherData(collection, city, day, jsonDoc, "weatherCondition");
+        return fetchWeatherData(city, day, jsonDoc);
     }
 
-    public void fetchForecastData(MongoCollection<Document> collection, City city, LocalDate day) throws IOException {
+    public List<Document> fetchForecastData(City city, LocalDate day) throws IOException {
         // 1) Get hourly weather data for specified day
         JSONObject jsonDoc = DarkSkyFetcher.getInstance().getForecastWeather(city.getCoords().lat, city.getCoords().lon, day);
-        fetchWeatherData(collection, city, day, jsonDoc, "weatherForecast");
+        return fetchWeatherData(city, day, jsonDoc);
     }
 
-    public void fetchPollutionData(MongoCollection<Document> collection, City city, LocalDate day) throws IOException {
+    public List<Document> fetchPollutionData(City city, LocalDate day) throws IOException {
         JSONObject jsonDoc = OpenAQFetcher.getInstance().getPollutionMeasurements(city.getCountry(), city.getCity(),
                 day.atTime(0,0), day.atTime(23,59));
 
@@ -258,7 +144,7 @@ public class FetchAdapter {
             }
         }
 
-        addDataToCollection(collection, city, day, "pollutionMeasurements", finalReadingList);
+        return finalReadingList;
 /*
         Document updatedoc = new Document()
                 .append("$setOnInsert", new Document()
