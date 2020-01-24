@@ -1,6 +1,12 @@
 package main.java.fetch;
 
+import com.mongodb.ReadConcern;
+import com.mongodb.ReadPreference;
+import com.mongodb.TransactionOptions;
+import com.mongodb.WriteConcern;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
@@ -80,88 +86,115 @@ public class FetchAdapter {
 
     private void addDataToCollection (MongoCollection<Document> collection, City city, LocalDate day,
                                       String arrayname, List<Document> mongoHourlyList) {
-        LocalDateTime[] weekrange = FetchUtils.getWeekPeriod(day);
-        LocalDateTime weekStart = weekrange[0];
-        LocalDateTime weekEnd = weekrange[1];
+        //start a client session
+        ClientSession clientSession = client.startSession();
 
-        // Create query and update BSON Documents
-        Document updatedoc = new Document()
-                .append("$setOnInsert", new Document()
-                        .append("country",city.getCountry()).append("city", city.getCity())
-                        .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
-                        .append("periodStart", weekStart)
-                        .append("periodEnd", weekEnd)
-                        .append("enabled", true)
-                        .append(arrayname, mongoHourlyList));
+        // define options to use for the transaction
+        TransactionOptions txnOptions = TransactionOptions.builder()
+                .readPreference(ReadPreference.primary())
+                .readConcern(ReadConcern.MAJORITY)      // study better
+                .writeConcern(WriteConcern.MAJORITY)    // study better
+                .build();
 
-        //filter document
-        Document filterDoc = new Document("city", city.getCity())
-                .append("country", city.getCountry())
-                .append("periodStart", weekStart)
-                .append("periodEnd", weekEnd);
+        //define the sequence of operations to perform inside the transaction
+        TransactionBody txnBody = new TransactionBody<String>() {
+            @Override
+                public String execute() {
+                LocalDateTime[] weekrange = FetchUtils.getWeekPeriod(day);
+                LocalDateTime weekStart = weekrange[0];
+                LocalDateTime weekEnd = weekrange[1];
 
-        // Update or insert (upsert) collection on MongoDB
-        System.out.println(FetchUtils.toJson(filterDoc));
-        System.out.println(FetchUtils.toJson(updatedoc));
+                // Create query and update BSON Documents
+                Document updatedoc = new Document()
+                        .append("$setOnInsert", new Document()
+                                .append("country",city.getCountry()).append("city", city.getCity())
+                                .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
+                                .append("periodStart", weekStart)
+                                .append("periodEnd", weekEnd)
+                                .append("enabled", true)
+                                .append(arrayname, mongoHourlyList));
 
-        if (collection.updateOne(filterDoc, updatedoc, new UpdateOptions().upsert(true)).getMatchedCount() > 0) {
-            //array of operation to execute in bulk
-            List<UpdateOneModel<Document>> operations = new ArrayList<UpdateOneModel<Document>>();
-
-            for (Document measurement : mongoHourlyList) {
-                LocalDateTime datetime = (LocalDateTime) measurement.get("datetime");
-                List<Document> newMeasures = (List<Document>) measurement.get("measurements");
-
-                //the measurement must exist
-                Document findMeasurementDoc = new Document("city", city.getCity())
+                //filter document
+                Document filterDoc = new Document("city", city.getCity())
                         .append("country", city.getCountry())
                         .append("periodStart", weekStart)
                         .append("periodEnd", weekEnd);
 
-                String location = (String) measurement.get("location");
-                if (arrayname.equals("pollutionMeasurements"))
-                    findMeasurementDoc.append(arrayname, new Document("$elemMatch", new Document("datetime", datetime).append("location", location)));
-                else
-                    findMeasurementDoc.append(arrayname + ".datetime", datetime);
+                // Update or insert (upsert) collection on MongoDB
+                System.out.println(FetchUtils.toJson(filterDoc));
+                System.out.println(FetchUtils.toJson(updatedoc));
 
-                //if the measurement not exist add it
-                if (!collection.find(findMeasurementDoc).iterator().hasNext()) {
-                    Document addMeasurementDoc = new Document("$push", new Document(arrayname, new Document("datetime", datetime).append("measurements", newMeasures)));
-                    operations.add(new UpdateOneModel<>(filterDoc, addMeasurementDoc));
-                }
-                else {
-                    List<Document> arrayFilters = new ArrayList<Document>();
-                    switch (arrayname) {
-                        case "pollutionMeasurements":
-                                arrayFilters.add(new Document("t.datetime", datetime).append("t.location", location));
-                            break;
-                        default: arrayFilters.add(new Document("t.datetime", datetime));
-                            break;
+                if (collection.updateOne(filterDoc, updatedoc, new UpdateOptions().upsert(true)).getMatchedCount() > 0) {
+                    //array of operation to execute in bulk
+                    List<UpdateOneModel<Document>> operations = new ArrayList<UpdateOneModel<Document>>();
+
+                    for (Document measurement : mongoHourlyList) {
+                        LocalDateTime datetime = (LocalDateTime) measurement.get("datetime");
+                        List<Document> newMeasures = (List<Document>) measurement.get("measurements");
+
+                        //the measurement must exist
+                        Document findMeasurementDoc = new Document("city", city.getCity())
+                                .append("country", city.getCountry())
+                                .append("periodStart", weekStart)
+                                .append("periodEnd", weekEnd);
+
+                        String location = (String) measurement.get("location");
+                        if (arrayname.equals("pollutionMeasurements"))
+                            findMeasurementDoc.append(arrayname, new Document("$elemMatch", new Document("datetime", datetime).append("location", location)));
+                        else
+                            findMeasurementDoc.append(arrayname + ".datetime", datetime);
+
+                        //if the measurement not exist add it
+                        if (!collection.find(findMeasurementDoc).iterator().hasNext()) {
+                            Document addMeasurementDoc = new Document("$push", new Document(arrayname, new Document("datetime", datetime).append("measurements", newMeasures)));
+                            operations.add(new UpdateOneModel<>(filterDoc, addMeasurementDoc));
+                        }
+                        else {
+                            List<Document> arrayFilters = new ArrayList<Document>();
+                            switch (arrayname) {
+                                case "pollutionMeasurements":
+                                        arrayFilters.add(new Document("t.datetime", datetime).append("t.location", location));
+                                    break;
+                                default: arrayFilters.add(new Document("t.datetime", datetime));
+                                    break;
+                            }
+                            UpdateOptions options = new UpdateOptions().arrayFilters(arrayFilters);
+
+                        /*
+                            //pull existing measures
+                            List<String> measurementNames = new ArrayList<>();
+                            for (Document dd: newMeasures) {
+                                measurementNames.add((String) dd.get("name"));
+                            }
+                            Document pullDoc = new Document("$pull", new Document(arrayname+".$[t].measurements", new Document("name", new Document("$in", measurementNames))));
+                            operations.add(new UpdateOneModel<>(filterDoc, pullDoc, options));
+
+                            //push new measures
+                            Document pushDoc = new Document("$push", new Document(arrayname+".$[t].measurements", new Document("$each", newMeasures)));
+                            operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
+
+                         */
+                            //push new measures
+                            Document pushDoc = new Document("$set", new Document(arrayname+".$[t].measurements", newMeasures));
+                            operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
+                        }
                     }
-                    UpdateOptions options = new UpdateOptions().arrayFilters(arrayFilters);
 
-                /*
-                    //pull existing measures
-                    List<String> measurementNames = new ArrayList<>();
-                    for (Document dd: newMeasures) {
-                        measurementNames.add((String) dd.get("name"));
-                    }
-                    Document pullDoc = new Document("$pull", new Document(arrayname+".$[t].measurements", new Document("name", new Document("$in", measurementNames))));
-                    operations.add(new UpdateOneModel<>(filterDoc, pullDoc, options));
-
-                    //push new measures
-                    Document pushDoc = new Document("$push", new Document(arrayname+".$[t].measurements", new Document("$each", newMeasures)));
-                    operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
-
-                 */
-                    //push new measures
-                    Document pushDoc = new Document("$set", new Document(arrayname+".$[t].measurements", newMeasures));
-                    operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
+                    if (operations.size() > 0)
+                        collection.bulkWrite((List<? extends WriteModel<? extends Document>>) operations);
                 }
+                return "Inserted without duplicates";
             }
+        };
 
-            if (operations.size() > 0)
-                collection.bulkWrite((List<? extends WriteModel<? extends Document>>) operations);
+        try {
+            clientSession.withTransaction(txnBody, txnOptions);
+            clientSession.commitTransaction();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            clientSession.abortTransaction();
+        } finally {
+            clientSession.close();
         }
     }
 
