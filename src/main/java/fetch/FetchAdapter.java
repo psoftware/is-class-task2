@@ -265,7 +265,8 @@ public class FetchAdapter {
             Document newDoc = new Document()
                     .append("country", city.getCountry())
                     .append("city", city.getCity())
-                    .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()));
+                    .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
+                    .append("votes", Collections.emptyList());
             resList.add(newDoc);
         }
 

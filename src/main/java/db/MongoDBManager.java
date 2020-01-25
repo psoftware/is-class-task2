@@ -82,6 +82,20 @@ public class MongoDBManager {
         mongoClient.close();
     }
 
+    /**
+     * Merge OpenAQ Location list to locations collection
+     * @throws IOException due to OpenAQ exceptions
+     */
+    public void syncLocationList() throws IOException {
+        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        // duplicate check is made by unique compound index on (country, city)
+        collection.insertMany(FetchAdapter.getInstance().fetchAllCities());
+    }
+
+    /**
+     * Wipe out locations collection and reload it from OpenAQ
+     * @throws IOException due to OpenAQ exceptions
+     */
     public void resetLocationList() throws IOException {
         MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
         collection.deleteMany(new Document());

@@ -146,6 +146,9 @@ public class Task2GUIController {
     private MenuItem promoteDemoteMenu;
 
     @FXML
+    private MenuItem syncLocationsMenuItem;
+
+    @FXML
     private MenuItem reloadLocationsMenuItem;
 
     @FXML
@@ -360,6 +363,10 @@ public class Task2GUIController {
             reloadLocationsMenuItem.setOnAction(event -> SimpleDialog.showIfErrorOrSuccess(
                     () -> MongoDBManager.getInstance().resetLocationList(),
                     "Reloading locations...","Location reload completed"
+            ));
+            syncLocationsMenuItem.setOnAction(event -> SimpleDialog.showIfErrorOrSuccess(
+                    () -> MongoDBManager.getInstance().resetLocationList(),
+                    "Syncing locations...","Location sync completed"
             ));
             openSettings.setOnAction(e -> showSettings());
         }

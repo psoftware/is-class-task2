@@ -26,6 +26,7 @@
                 </Menu>
                 <Menu mnemonicParsing="false" text="Admin">
                     <items>
+                        <MenuItem fx:id="syncLocationsMenuItem" mnemonicParsing="false" text="Sync Locations" />
                         <MenuItem fx:id="reloadLocationsMenuItem" mnemonicParsing="false" text="Reload Locations" />
                         <MenuItem mnemonicParsing="false" text="Add Location" />
                         <MenuItem mnemonicParsing="false" text="Remove Location" />
