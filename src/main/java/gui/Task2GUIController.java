@@ -386,7 +386,7 @@ public class Task2GUIController {
                     "Reloading locations...","Location reload completed"
             ));
             syncLocationsMenuItem.setOnAction(event -> SimpleDialog.showIfErrorOrSuccess(
-                    () -> MongoDBManager.getInstance().resetLocationList(),
+                    () -> MongoDBManager.getInstance().syncLocationList(),
                     "Syncing locations...","Location sync completed"
             ));
             openSettings.setOnAction(e -> showSettings());

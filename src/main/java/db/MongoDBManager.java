@@ -2,10 +2,7 @@ package main.java.db;
 
 import com.mongodb.*;
 import com.mongodb.client.*;
-import com.mongodb.client.model.IndexOptions;
-import com.mongodb.client.model.UpdateOneModel;
-import com.mongodb.client.model.UpdateOptions;
-import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.model.*;
 import com.mongodb.client.result.UpdateResult;
 import io.github.cbartosiak.bson.codecs.jsr310.duration.DurationAsDecimal128Codec;
 import io.github.cbartosiak.bson.codecs.jsr310.localdate.LocalDateAsDateTimeCodec;
@@ -89,8 +86,13 @@ public class MongoDBManager {
      */
     public void syncLocationList() throws IOException {
         MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
-        // duplicate check is made by unique compound index on (country, city)
-        collection.insertMany(FetchAdapter.getInstance().fetchAllCities());
+        try {
+            // duplicate check is made by unique compound index on (country, city), skip duplicate errors using ordered:false option
+            collection.insertMany(FetchAdapter.getInstance().fetchAllCities(), new InsertManyOptions().ordered(false));
+        } catch (MongoBulkWriteException e) {
+            // duplicates cause a MongoBulkWriteException, we should skip this
+            //return e.getWriteResult().getInsertedCount(); // TODO: return updated locations and implement this on GUI
+        }
     }
 
     /**
