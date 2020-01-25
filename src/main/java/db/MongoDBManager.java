@@ -671,12 +671,22 @@ public class MongoDBManager {
     }
 
 
-    public void updateCityStatus(City city, boolean enabled) {
+    /**
+     * Update location status
+     * @param city to be updated
+     * @param enabled new status to apply
+     * @return new location status (just for atomicity)
+     */
+    // TODO: we should update redundancy in all the measures collection
+    public boolean updateCityStatus(City city, boolean enabled) {
         MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
 
-        collection.updateOne(
+        Document updatedDocument = collection.findOneAndUpdate(
                 and(eq("country", city.getCountry()), eq("city", city.getCity())),
-                new Document("$set", new Document("enabled", enabled)));
+                new Document("$set", new Document("enabled", enabled)),
+                new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+
+        return updatedDocument.getBoolean("enabled");
     }
 
     public ArrayList<City> getCitiesByStatus(boolean status) {

@@ -45,6 +45,7 @@ public class City {
     }
 
     public Boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
     public Coords getCoords() {
         return coords;

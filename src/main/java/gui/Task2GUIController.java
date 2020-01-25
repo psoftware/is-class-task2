@@ -137,6 +137,9 @@ public class Task2GUIController {
     private Button buttonFetchForecastWeather;
 
     @FXML
+    private Button buttonChangeEnable;
+
+    @FXML
     private DatePicker datepickerStart;
 
     @FXML
@@ -306,6 +309,17 @@ public class Task2GUIController {
         return selectedCity;
     }
 
+    public void setSelectedCity(City c) {
+        this.selectedCity = c;
+        paneVoteLocation.setManaged(!getSelectedCity().isEnabled()); // show vote panel only if city is not enabled
+        buttonChangeEnable.setText((!getSelectedCity().isEnabled() ? "Enable" : "Disable") + " City for Non-registered Users");
+        buttonChangeEnable.setOnAction(e -> {
+            boolean newStatus = MongoDBManager.getInstance().updateCityStatus(c, !c.isEnabled());
+            c.setEnabled(newStatus);
+            setSelectedCity(c);
+        });
+    }
+
     private void afterMapIsInitialized(User user) {
         // set defaults
         mapView.setZoom(ZOOM_DEFAULT);
@@ -459,7 +473,7 @@ public class Task2GUIController {
                     m.setVisible(true);
             }
 
-            selectedCity = c;
+            setSelectedCity(c);
         }
 
         private City getClosestCity(Coordinate clickPosition){
