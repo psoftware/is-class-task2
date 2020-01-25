@@ -391,8 +391,8 @@ public class Task2GUIController {
             java.lang.String country = textCountry.getText();
             String city = textCity.getText();
             for (City c: locations) {
-                if(country.equals(c.getCountry()) || country.equals(""))
-                    if(city.equals(c.getCity()) || city.equals("")){
+                if(country.toLowerCase().equals(c.getCountry().toLowerCase()) || country.equals(""))
+                    if(city.toLowerCase().equals(c.getCity().toLowerCase()) || city.equals("")){
                         Button cityButton = new Button(c.getCity() + ", "+ c.getCountry());
                         cityButton.setOnAction((event1 -> centerMapToCity(c)));
                         locationButtons.getChildren().add(cityButton);
