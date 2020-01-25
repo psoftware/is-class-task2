@@ -92,6 +92,15 @@ public class Task2GUIController {
     private Button buttonFilter;
 
     @FXML
+    private AnchorPane paneVoteLocation;
+
+    @FXML
+    private Button buttonVoteLocation;
+
+    @FXML
+    private Button buttonUnvoteLocation;
+
+    @FXML
     private Button buttonShowWeatherHistory;
 
     @FXML
@@ -302,6 +311,18 @@ public class Task2GUIController {
         buttonFilter.setOnAction((event) -> searchLocation());
 
         // Base use cases
+        buttonVoteLocation.setOnAction(
+                (event) -> SimpleDialog.showIfErrorOrSuccess(
+                        () -> MongoDBManager.getInstance().voteLocation(user, getSelectedCity().getCityName()),
+                        "Voting...", "Location voted successfully")
+        );
+
+        buttonUnvoteLocation.setOnAction(
+                (event) -> SimpleDialog.showIfErrorOrSuccess(
+                        () -> MongoDBManager.getInstance().unvoteLocation(user, getSelectedCity().getCityName()),
+                        "Unvoting...", "Location unvoted successfully")
+        );
+
         buttonShowWeatherHistory.setOnAction(
                 (event) -> {
                     HashSet<LocalDate> pastWDates = MongoDBManager.getInstance().getPastWeatherAvailableDates(getSelectedCity());

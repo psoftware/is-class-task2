@@ -6,6 +6,7 @@ import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.result.UpdateResult;
 import io.github.cbartosiak.bson.codecs.jsr310.duration.DurationAsDecimal128Codec;
 import io.github.cbartosiak.bson.codecs.jsr310.localdate.LocalDateAsDateTimeCodec;
 import io.github.cbartosiak.bson.codecs.jsr310.localdatetime.LocalDateTimeAsDateTimeCodec;
@@ -604,6 +605,24 @@ public class MongoDBManager {
         collection.updateOne(
                 eq("username", user.getUsername()),
                 new Document("$set", new Document("status", status)));
+    }
+
+    public void voteLocation(User user, City.CityName cityName) {
+        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        UpdateResult updateResult =
+                collection.updateOne(and(eq("country", cityName.getCountry()), eq("city", cityName.getCity())),
+                        new Document("$addToSet", new Document("votes", user.getUsername())));
+        if(updateResult.getModifiedCount() < 1)
+            throw new IllegalStateException("Already voted location");
+    }
+
+    public void unvoteLocation(User user, City.CityName cityName) {
+        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        UpdateResult updateResult =
+                collection.updateOne(and(eq("country", cityName.getCountry()), eq("city", cityName.getCity())),
+                        new Document("$pull", new Document("votes", user.getUsername())));
+        if(updateResult.getModifiedCount() < 1)
+            throw new IllegalStateException("Not voted location");
     }
 
 
