@@ -174,8 +174,14 @@ public class MongoDBManager {
 
     }
 
+    // single text unique index on username
     private void createUserIndex() {
         database.getCollection(AppCollection.USERS.getName()).createIndex(new Document("username", 1), new IndexOptions().unique(true));
+    }
+
+    // compound unique index on (country, city)
+    private void createLocationIndex() {
+        database.getCollection(AppCollection.LOCATIONS.getName()).createIndex(new Document("country", 1).append("city", 1), new IndexOptions().unique(true));
     }
 
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
@@ -862,6 +868,7 @@ public class MongoDBManager {
 
             // Reload locations
             MongoDBManager.getInstance().resetLocationList();
+            MongoDBManager.getInstance().createLocationIndex();
             MongoDBManager.getInstance().getLocationList().forEach(c -> System.out.println(c.toString()));
 
             // Reload users
