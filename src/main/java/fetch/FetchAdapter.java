@@ -243,7 +243,7 @@ public class FetchAdapter {
             if(city.equals("N/A") || country.equals("N/A") || city.equals("unused"))
                 continue;
 
-            City newcity = new City(country, city, new City.Coords(latitude, longitude));
+            City newcity = new City(country, city, null, new City.Coords(latitude, longitude));
 
             // TODO: Fix this design error. What coordinate set should we use if there are many locations in the same city?
             // For now lets take a centroid using avg on lat and lon
@@ -254,7 +254,7 @@ public class FetchAdapter {
         }
 
         for(Map.Entry<City.CityName, CoordsAvg> c : cityMap.entrySet())
-            resultList.add(new City(c.getKey(), c.getValue().compute()));
+            resultList.add(new City(c.getKey(), c.getValue().compute(), null));
         return resultList;
     }
 
@@ -266,6 +266,7 @@ public class FetchAdapter {
                     .append("country", city.getCountry())
                     .append("city", city.getCity())
                     .append("coordinates", new Document("type", "point").append("coordinates", city.getCoords().asList()))
+                    .append("enabled", false)
                     .append("votes", Collections.emptyList());
             resList.add(newDoc);
         }
@@ -276,7 +277,7 @@ public class FetchAdapter {
     public static void main(String[] args) {
         JsonWriterSettings jsonWriterSettings = JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build();
         try {
-            City cityRome = new City("IT", "Roma", new City.Coords(41.902782, 12.4963));
+            City cityRome = new City("IT", "Roma", null, new City.Coords(41.902782, 12.4963));
             //MongoCollection<Document> collection = MongoDBManager.getInstance().database.getCollection("measureswpoll");
 
             Document mongoDoc;

@@ -10,23 +10,25 @@ public class City {
     private CityName cityName;
     private Coords coords;
     private Integer voteCount = null;
+    private Boolean enabled;
 
-    public City(String country, String city, Coords coords){
-        this(new CityName(country, city), coords);
+    public City(String country, String city, @Nullable Boolean enabled, Coords coords){
+        this(new CityName(country, city), coords, enabled);
     }
 
-    public City(String country, String city, Coords coords, @Nullable Integer voteCount){
-        this(country, city, coords);
+    public City(String country, String city, @Nullable Boolean enabled, Coords coords, @Nullable Integer voteCount){
+        this(country, city, enabled, coords);
         this.voteCount = voteCount;
     }
 
-    public City(CityName cityName, Coords coords){
+    public City(CityName cityName, Coords coords, @Nullable Boolean enabled){
         this.coords = coords;
         this.cityName = cityName;
+        this.enabled = enabled;
     }
 
-    public City(CityName cityName, Coords coords, @Nullable Integer voteCount){
-        this(cityName, coords);
+    public City(CityName cityName, Coords coords, @Nullable Boolean enabled, @Nullable Integer voteCount){
+        this(cityName, coords, enabled);
         this.voteCount = voteCount;
     }
 
@@ -41,6 +43,8 @@ public class City {
     public CityName getCityName() {
         return cityName;
     }
+
+    public Boolean isEnabled() { return enabled; }
 
     public Coords getCoords() {
         return coords;

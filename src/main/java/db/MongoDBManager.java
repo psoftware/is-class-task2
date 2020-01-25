@@ -124,11 +124,12 @@ public class MongoDBManager {
                 Document bsonCity = cursor.next();
                 String country = bsonCity.getString("country");
                 String city = bsonCity.getString("city");
+                boolean enabled = bsonCity.getBoolean("enabled");
 
                 Document bsonCoordinates = (Document)bsonCity.get("coordinates");
                 List<Double> coords = (List<Double>)bsonCoordinates.get("coordinates");
 
-                City newCity = new City(country, city, new City.Coords(coords.get(0), coords.get(1)));
+                City newCity = new City(country, city, enabled, new City.Coords(coords.get(0), coords.get(1)));
                 resultList.add(newCity);
             }
         } finally {
@@ -147,8 +148,9 @@ public class MongoDBManager {
         ArrayList<City> resultList = new ArrayList<>();
         MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
         MongoCursor<Document> cursor = collection.aggregate(Arrays.asList(
-                project(fields(include("country", "city", "coordinates"),
-                computed("votecount", new Document("$size", "$votes")))),
+                match(eq("enabled", false)),
+                project(fields(include("country", "city", "coordinates", "enabled"),
+                        computed("votecount", new Document("$size", "$votes")))),
                 sort(descending("votecount")), limit(n))).cursor();
 
         try {
@@ -163,13 +165,14 @@ public class MongoDBManager {
                 Document bsonCity = cursor.next();
                 String country = bsonCity.getString("country");
                 String city = bsonCity.getString("city");
+                boolean enabled = bsonCity.getBoolean("enabled");
 
                 Document bsonCoordinates = (Document)bsonCity.get("coordinates");
                 List<Double> coords = (List<Double>)bsonCoordinates.get("coordinates");
 
                 Integer voteCount = bsonCity.getInteger("votecount");
 
-                City newCity = new City(country, city, new City.Coords(coords.get(0), coords.get(1)), voteCount);
+                City newCity = new City(country, city, enabled, new City.Coords(coords.get(0), coords.get(1)), voteCount);
                 resultList.add(newCity);
             }
         } finally { cursor.close(); }
@@ -668,8 +671,7 @@ public class MongoDBManager {
     }
 
 
-    //TODO: aggiungere campo anabled alla classe city e la funzione getAllCitiesAsList di conseguenza
-    public void updateCityStatus (City city, boolean enabled) {
+    public void updateCityStatus(City city, boolean enabled) {
         MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
 
         collection.updateOne(
@@ -677,8 +679,7 @@ public class MongoDBManager {
                 new Document("$set", new Document("enabled", enabled)));
     }
 
-    //TODO: aggiungere campo anabled alla classe city e la funzione getAllCitiesAsList di conseguenza
-    public ArrayList<City> getCitiesByStatus (boolean status) {
+    public ArrayList<City> getCitiesByStatus(boolean status) {
         MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
         ArrayList<City> result = new ArrayList<>();
 
@@ -688,7 +689,8 @@ public class MongoDBManager {
                 Document d = cursor.next();
                 Document d1 = (Document) d.get("coordinates");
                 ArrayList<Double> coordinates = (ArrayList<Double>) d1.get("coordinates");
-                City c = new City(d.getString("country"), d.getString("city"), new City.Coords(coordinates.get(0), coordinates.get(1)));
+                City c = new City(d.getString("country"), d.getString("city"), d.getBoolean("enabled"),
+                        new City.Coords(coordinates.get(0), coordinates.get(1)));
                 result.add(c);
             }
         } finally {
@@ -974,7 +976,7 @@ public class MongoDBManager {
             System.out.println("check 3: " + ((resultUser.equals(eUser)) ? "ok" : "not ok"));
 
             // try loading pollution measures
-            City cityRome = new City("IT", "Roma", new City.Coords(41.902782, 12.4963));
+            City cityRome = new City("IT", "Roma", true, new City.Coords(41.902782, 12.4963));
             MongoDBManager.getInstance().testMeasureImport(cityRome);
 
             // fetch pollution by hours and days
