@@ -58,6 +58,11 @@
                                 <Label fx:id="labelCity" text="City "/>
                                 <TextField fx:id="textCity"/>
                                 <Button fx:id="buttonFilter" text="Search" maxWidth="Infinity"/>
+                                <AnchorPane fx:id="separatorAdminFilter" prefHeight="1.0">
+                                    <Separator AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" />
+                                    <Label alignment="CENTER" text="Administration" textAlignment="CENTER" AnchorPane.bottomAnchor="4.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0.0" />
+                                </AnchorPane>
+                                <Button fx:id="buttonShowTopVoted" text="Show Top 10 Voted Locations" maxWidth="Infinity"/>
                             </children>
                         </VBox>
                     </content>

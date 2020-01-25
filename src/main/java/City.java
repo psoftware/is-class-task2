@@ -1,5 +1,7 @@
 package main.java;
 
+import com.mongodb.lang.Nullable;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -7,14 +9,25 @@ import java.util.Objects;
 public class City {
     private CityName cityName;
     private Coords coords;
+    private Integer voteCount = null;
 
     public City(String country, String city, Coords coords){
         this(new CityName(country, city), coords);
     }
 
+    public City(String country, String city, Coords coords, @Nullable Integer voteCount){
+        this(country, city, coords);
+        this.voteCount = voteCount;
+    }
+
     public City(CityName cityName, Coords coords){
         this.coords = coords;
         this.cityName = cityName;
+    }
+
+    public City(CityName cityName, Coords coords, @Nullable Integer voteCount){
+        this(cityName, coords);
+        this.voteCount = voteCount;
     }
 
     public String getCountry() {
@@ -33,9 +46,15 @@ public class City {
         return coords;
     }
 
+    public @Nullable Integer getVoteCount() {
+        return voteCount;
+    }
+
     @Override
     public String toString() {
-        return cityName.getCity() + ',' + cityName.getCountry() + " at " + ((coords != null) ? coords.toString() : "null");
+        return cityName.getCity() + ',' + cityName.getCountry()
+                + " at " + ((coords != null) ? coords.toString() : "null")
+                + " voted by " + ((voteCount != null) ? voteCount.toString() : "null");
     }
 
     @Override

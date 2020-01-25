@@ -33,6 +33,7 @@ import static com.mongodb.client.model.Accumulators.*;
 import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Projections.*;
+import static com.mongodb.client.model.Sorts.descending;
 
 public class MongoDBManager {
     // This is needed to switch default DATE_TIME decoding from Date to LocalDateTime
@@ -133,6 +134,45 @@ public class MongoDBManager {
         } finally {
             cursor.close();
         }
+
+        return resultList;
+    }
+
+    /**
+     * Get Top N locations by vote count
+     * @param n location count limit
+     * @return list of locations with vote count field initialized
+     */
+    public ArrayList<City> getTopLocationsByVoteCount(int n) {
+        ArrayList<City> resultList = new ArrayList<>();
+        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCursor<Document> cursor = collection.aggregate(Arrays.asList(
+                project(fields(include("country", "city", "coordinates"),
+                computed("votecount", new Document("$size", "$votes")))),
+                sort(descending("votecount")), limit(n))).cursor();
+
+        try {
+            while (cursor.hasNext()) {
+                /*Location {
+                    country: 'IT',
+                    city: 'Pisa',
+                    coordinates: {type:'point', coordinates: [43.716667, 10.400000]},
+                    enabled: False
+                    votecount : 10
+                }*/
+                Document bsonCity = cursor.next();
+                String country = bsonCity.getString("country");
+                String city = bsonCity.getString("city");
+
+                Document bsonCoordinates = (Document)bsonCity.get("coordinates");
+                List<Double> coords = (List<Double>)bsonCoordinates.get("coordinates");
+
+                Integer voteCount = bsonCity.getInteger("votecount");
+
+                City newCity = new City(country, city, new City.Coords(coords.get(0), coords.get(1)), voteCount);
+                resultList.add(newCity);
+            }
+        } finally { cursor.close(); }
 
         return resultList;
     }

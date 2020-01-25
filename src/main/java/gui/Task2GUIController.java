@@ -92,6 +92,12 @@ public class Task2GUIController {
     private Button buttonFilter;
 
     @FXML
+    private AnchorPane separatorAdminFilter;
+
+    @FXML
+    private Button buttonShowTopVoted;
+
+    @FXML
     private AnchorPane paneVoteLocation;
 
     @FXML
@@ -356,6 +362,7 @@ public class Task2GUIController {
 
         // Admin additional use cases
         if(user.getStatus().equals(User.Status.ADMIN)) {
+            buttonShowTopVoted.setOnAction(e -> showTopLocations(10));
             buttonFetchPollution.setOnAction(e ->
                 changeTimePane(TimePaneType.DATERANGE,
                         (d1, d2) -> new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
@@ -409,6 +416,17 @@ public class Task2GUIController {
             City closestCity = getClosestCity(newPosition);
             centerMapToCity(closestCity);
         });
+    }
+
+    private void showTopLocations(int n){
+        // Button was clicked, close Filters, fetch correct locations and open Locations
+        locationButtons.getChildren().clear();
+        leftControls.setExpandedPane(paneLocations);
+        for (City c: MongoDBManager.getInstance().getTopLocationsByVoteCount(n)) {
+            Button cityButton = new Button(c.getCity() + ", "+ c.getCountry() + " (" + c.getVoteCount() +" votes)");
+            cityButton.setOnAction((event1 -> centerMapToCity(c)));
+            locationButtons.getChildren().add(cityButton);
+        }
     }
 
         private void searchLocation(){
