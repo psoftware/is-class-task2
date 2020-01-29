@@ -22,6 +22,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.json.JSONObject;
 
+import javax.print.Doc;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -275,7 +276,7 @@ public class MongoDBManager {
     }
 
     public void testMeasureImport(City city) throws IOException {
-        for(int i=0; i<5; i++) {
+        for(int i=0; i<1; i++) {
             LocalDate d = LocalDate.now().minusDays(5 + i);
             List<Document> pollutionData = FetchAdapter.getInstance()
                     .fetchPollutionData(city, d);
@@ -681,12 +682,19 @@ public class MongoDBManager {
     public boolean updateCityStatus(City city, boolean enabled) {
         MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
 
-        Document updatedDocument = collection.findOneAndUpdate(
+        Document updatedLocationDocument = collection.findOneAndUpdate(
                 and(eq("country", city.getCountry()), eq("city", city.getCity())),
                 new Document("$set", new Document("enabled", enabled)),
                 new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
-        return updatedDocument.getBoolean("enabled");
+        //update measurements documents
+        String[] collectionNames = {AppCollection.POLLUTION.getName(), AppCollection.FORECAST_WEATHER.getName(), AppCollection.PAST_WEATHER.getName()};
+        for (String collectionName : collectionNames) {
+            collection = database.getCollection(collectionName);
+            collection.updateMany(and(eq("country", city.getCountry()), eq("city", city.getCity())), new Document("$set", new Document("enabled", enabled)));
+        }
+
+        return updatedLocationDocument.getBoolean("enabled");
     }
 
     public ArrayList<City> getCitiesByStatus(boolean status) {
@@ -1013,6 +1021,11 @@ public class MongoDBManager {
             System.out.println("Update Test");
             User user = new User("utente-s", "aldo", "aldo", User.Status.ENABLED);
             MongoDBManager.getInstance().updateUserStatus(user, User.Status.ADMIN.ordinal());
+
+            //test update city status
+            System.out.println("update city status");
+            MongoDBManager.getInstance().updateCityStatus(cityRome, false);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
