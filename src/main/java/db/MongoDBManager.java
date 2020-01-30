@@ -276,7 +276,7 @@ public class MongoDBManager {
     }
 
     public void testMeasureImport(City city) throws IOException {
-        for(int i=0; i<1; i++) {
+        for(int i=0; i<5; i++) {
             LocalDate d = LocalDate.now().minusDays(5 + i);
             List<Document> pollutionData = FetchAdapter.getInstance()
                     .fetchPollutionData(city, d);
@@ -460,6 +460,7 @@ public class MongoDBManager {
 
         // Update or insert (upsert) collection on MongoDB
         System.out.println(FetchUtils.toJson(filterDoc));
+        System.out.println(arrayname + " " + day);
         //System.out.println(FetchUtils.toJson(updatedoc));
 
         if (collection.updateOne(filterDoc, updatedoc, new UpdateOptions().upsert(true)).getMatchedCount() > 0) {
@@ -476,50 +477,24 @@ public class MongoDBManager {
                         .append("periodStart", weekStart)
                         .append("periodEnd", weekEnd);
 
-                String location = (String) measurement.get("location");
-                if (arrayname.equals("pollutionMeasurements"))
-                    findMeasurementDoc.append(arrayname, new Document("$elemMatch", new Document("datetime", datetime).append("location", location)));
-                else
-                    findMeasurementDoc.append(arrayname + ".datetime", datetime);
+                //pull measurement if exists
+                Document pullDocument;
+                if (arrayname.equals("pollutionMeasurements")) {
+                    String location = (String) measurement.get("location");
+                    pullDocument = new Document("$pull", new Document(arrayname, new Document("location", location).append("datetime", datetime)));
+                } else
+                    pullDocument = new Document("$pull", new Document(arrayname, new Document("datetime", datetime)));
 
-                //if the measurement not exist add it
-                if (!collection.find(findMeasurementDoc).iterator().hasNext()) {
-                    Document addMeasurementDoc = new Document("$push", new Document(arrayname, new Document("datetime", datetime).append("measurements", newMeasures)));
-                    operations.add(new UpdateOneModel<>(filterDoc, addMeasurementDoc));
-                }
-                else {
-                    List<Document> arrayFilters = new ArrayList<Document>();
-                    switch (arrayname) {
-                        case "pollutionMeasurements":
-                            arrayFilters.add(new Document("t.datetime", datetime).append("t.location", location));
-                            break;
-                        default: arrayFilters.add(new Document("t.datetime", datetime));
-                            break;
-                    }
-                    UpdateOptions options = new UpdateOptions().arrayFilters(arrayFilters);
-
-                /*
-                    //pull existing measures
-                    List<String> measurementNames = new ArrayList<>();
-                    for (Document dd: newMeasures) {
-                        measurementNames.add((String) dd.get("name"));
-                    }
-                    Document pullDoc = new Document("$pull", new Document(arrayname+".$[t].measurements", new Document("name", new Document("$in", measurementNames))));
-                    operations.add(new UpdateOneModel<>(filterDoc, pullDoc, options));
-
-                    //push new measures
-                    Document pushDoc = new Document("$push", new Document(arrayname+".$[t].measurements", new Document("$each", newMeasures)));
-                    operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
-
-                 */
-                    //push new measures
-                    Document pushDoc = new Document("$set", new Document(arrayname+".$[t].measurements", newMeasures));
-                    operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
-                }
+                operations.add(new UpdateOneModel<>(filterDoc, pullDocument));
             }
 
-            if (operations.size() > 0)
+            Document pushDocument = new Document("$push", new Document(arrayname, new Document("$each", mongoHourlyList)));
+            operations.add(new UpdateOneModel<>(filterDoc, pushDocument));
+
+            if (operations.size() > 0) {
                 collection.bulkWrite((List<? extends WriteModel<? extends Document>>) operations);
+                System.out.println("Bulk Update Done");
+            }
         }
     }
 
@@ -1001,17 +976,22 @@ public class MongoDBManager {
             System.out.println("Test getHourlyPollution:");
             HashMap<City.CityName, ArrayList<MeasureValue>> mres;
             mres = MongoDBManager.getInstance().getHourlyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5), cityRome);
-            for(MeasureValue m : mres.get(cityRome.getCityName()))
-                System.out.println(m.toString());
+            if (!mres.isEmpty())
+                for(MeasureValue m : mres.get(cityRome.getCityName()))
+                    System.out.println(m.toString());
+
+
             System.out.println("Test getDailyPollution:");
             mres = MongoDBManager.getInstance().getDailyPollution(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5), cityRome);
-            for(MeasureValue m : mres.get(cityRome.getCityName()))
-                System.out.println(m.toString());
+            if (!mres.isEmpty())
+                for(MeasureValue m : mres.get(cityRome.getCityName()))
+                    System.out.println(m.toString());
 
             System.out.println("Test getDailyWeather:");
             mres = MongoDBManager.getInstance().getDailyForecastWeather(LocalDateTime.now().minusDays(14), LocalDateTime.now().minusDays(5), cityRome);
-            for(MeasureValue m : mres.get(cityRome.getCityName()))
-                System.out.println(m.toString());
+            if (!mres.isEmpty())
+                for(MeasureValue m : mres.get(cityRome.getCityName()))
+                    System.out.println(m.toString());
 
             ArrayList<MeasureValue> testGetPollutionForecast = MongoDBManager.getInstance().getPollutionForecast(LocalDateTime.now().plusDays(5), LocalDateTime.now().plusDays(7), cityRome);
             for (MeasureValue m : testGetPollutionForecast)
