@@ -581,6 +581,7 @@ public class MongoDBManager {
         return parsePollutionList(aggregateList, "hourlymeasurements");
     }
 
+
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPollution(LocalDate startDate, LocalDate endDate, City selectedCity) {
         return getDailyPollution(LocalDateTime.of(startDate, LocalTime.MIN), LocalDateTime.of(endDate, LocalTime.MAX), selectedCity);
     }
@@ -693,6 +694,47 @@ public class MongoDBManager {
             cursor.close();
             return result;
         }
+    }
+
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyWeather(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
+        if(startDate.compareTo(endDate) > 0)
+            return null;
+
+        MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName());
+
+        List<Bson> pipeline = Arrays.asList(
+                match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
+                        eq("city", selectedCity.getCity()),
+                        eq("country", selectedCity.getCountry()))),
+                unwind("$weatherCondition"),
+                match(and(lte("weatherCondition.datetime", endDate),
+                        gte("weatherCondition.datetime", startDate))),
+                unwind("$weatherCondition.measurements"),
+                project(fields(include("city", "country", "coordinates"), excludeId(),
+                        computed("weatherCondition.year", eq("$year", "$weatherCondition.datetime")),
+                        computed("weatherCondition.month", eq("$month", "$weatherCondition.datetime")),
+                        computed("weatherCondition.day", eq("$dayOfMonth", "$weatherCondition.datetime")),
+                        computed("weatherCondition.hour", eq("$hour", "$weatherCondition.datetime")),
+                        computed("measurement", "$weatherCondition.measurements"))),
+                group(and(eq("city", "$city"), eq("country", "$country"),
+                        eq("year", "$weatherCondition.year"), eq("month", "$weatherCondition.month"),
+                        eq("day", "$weatherCondition.day"), eq("hour", "$weatherCondition.hour"),
+                        eq("condition", "$measurement.name"), eq("unit", "$measurement.unit")),
+                        avg("value", "$measurement.value")),
+                group(and(eq("city", "$_id.city"), eq("country", "$_id.country"),
+                        eq("datetime", eq("$dateFromParts", and(eq("year", "$_id.year"),
+                                eq("month", "$_id.month"), eq("day", "$_id.day"),
+                                eq("hour", "$_id.hour"))))),
+                        push("measurements", and(eq("condition", "$_id.condition"),
+                                eq("unit", "$_id.unit"), eq("value", "$value")))),
+                group(and(eq("city", "$_id.city"), eq("country", "$_id.country")),
+                        push("hourlymeasurements", and(eq("datetime", "$_id.datetime"),
+                                eq("conditions", "$measurements")))),
+                project(fields(excludeId(), computed("city", "$_id.city"),
+                        computed("country", "$_id.country"), include("hourlymeasurements"))));
+
+        AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
+        return parsePollutionList(aggregateList, "hourlymeasurements");
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDate startDate, LocalDate endDate, City selectedCity) {
