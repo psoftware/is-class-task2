@@ -28,20 +28,25 @@ public class Task2 extends Application {
 
     void showMapWindow(Stage stage, User user) throws IOException {
         FXMLLoader fxmlLoader = null;
+        User.Status userStatus = null;
         switch (user.getStatus()) {
             case ADMIN:
                 fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("admin.fxml"));
+                userStatus = User.Status.ADMIN;
                 break;
             case ENABLED:
                 fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enabled.fxml"));
+                userStatus = User.Status.ENABLED;
                 break;
             case NOTENABLED:
                 fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("notEnabled.fxml"));
+                userStatus = User.Status.NOTENABLED;
         }
 
         Parent root = fxmlLoader.load();
 
         final Task2GUIController controller = fxmlLoader.<Task2GUIController>getController();
+        controller.setUserStatus(userStatus);
         final Projection projection = getParameters().getUnnamed().contains("wgs84")
                 ? Projection.WGS_84 : Projection.WEB_MERCATOR;
         controller.initMapAndControls(projection, user, controller);

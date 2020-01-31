@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<ScrollPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="main.java.gui.PopupController"
+            stylesheets="@gridPane.css">
+    <GridPane maxHeight="+Infinity" maxWidth="+Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="300.0"
+              prefWidth="300.0"
+              fx:id="enableDisablePane">
+        <columnConstraints>
+            <ColumnConstraints halignment="CENTER"/>
+            <ColumnConstraints halignment="CENTER"/>
+        </columnConstraints>
+    </GridPane>
+</ScrollPane>
+

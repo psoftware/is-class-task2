@@ -158,10 +158,10 @@ public class Task2GUIController {
     private Button buttonSubmitSingleDay;
 
     @FXML
-    private MenuItem enableDisableMenu;
+    private MenuItem enableDisableUserMenuItem;
 
     @FXML
-    private MenuItem promoteDemoteMenu;
+    private MenuItem promoteDemoteMenuItem;
 
     @FXML
     private MenuItem syncLocationsMenuItem;
@@ -186,8 +186,15 @@ public class Task2GUIController {
 
     public static Task2GUIController INSTANCE = null;
 
+    private User.Status userStatus;
+
+
+
     public Task2GUIController() {
-        locations = MongoDBManager.getInstance().getLocationList();
+    }
+
+    public void setUserStatus(User.Status userStatus){
+        this.userStatus = userStatus;
     }
 
     public void loadSettingsFromFile() {
@@ -197,6 +204,7 @@ public class Task2GUIController {
     }
 
     public void initMapAndControls(Projection projection, User user, Task2GUIController instance) {
+        locations = MongoDBManager.getInstance().getLocationList(userStatus);
         INSTANCE = instance;
         loadSettingsFromFile();
 
@@ -311,8 +319,9 @@ public class Task2GUIController {
 
     public void setSelectedCity(City c) {
         this.selectedCity = c;
-        paneVoteLocation.setManaged(!getSelectedCity().isEnabled()); // show vote panel only if city is not enabled
-        buttonChangeEnable.setText((!getSelectedCity().isEnabled() ? "Enable" : "Disable") + " City for Non-registered Users");
+        if(userStatus != User.Status.NOTENABLED)
+            paneVoteLocation.setManaged(!getSelectedCity().isEnabled()); // show vote panel only if city is not enabled
+        buttonChangeEnable.setText((!getSelectedCity().isEnabled() ? "Enable" : "Disable") + " City for Non-enabled Users");
         buttonChangeEnable.setOnAction(e -> {
             boolean newStatus = MongoDBManager.getInstance().updateCityStatus(c, !c.isEnabled());
             c.setEnabled(newStatus);
@@ -331,18 +340,6 @@ public class Task2GUIController {
         buttonFilter.setOnAction((event) -> searchLocation());
 
         // Base use cases
-        buttonVoteLocation.setOnAction(
-                (event) -> SimpleDialog.showIfErrorOrSuccess(
-                        () -> MongoDBManager.getInstance().voteLocation(user, getSelectedCity().getCityName()),
-                        "Voting...", "Location voted successfully")
-        );
-
-        buttonUnvoteLocation.setOnAction(
-                (event) -> SimpleDialog.showIfErrorOrSuccess(
-                        () -> MongoDBManager.getInstance().unvoteLocation(user, getSelectedCity().getCityName()),
-                        "Unvoting...", "Location unvoted successfully")
-        );
-
         buttonShowWeatherHistory.setOnAction(
                 (event) -> {
                     HashSet<LocalDate> pastWDates = MongoDBManager.getInstance().getPastWeatherAvailableDates(getSelectedCity());
@@ -367,13 +364,25 @@ public class Task2GUIController {
                     });
 
         // Regular additional use cases
-        if(!user.getStatus().equals(User.Status.NOTENABLED))
+        if(!user.getStatus().equals(User.Status.NOTENABLED)) {
+            buttonVoteLocation.setOnAction(
+                    (event) -> SimpleDialog.showIfErrorOrSuccess(
+                            () -> MongoDBManager.getInstance().voteLocation(user, getSelectedCity().getCityName()),
+                            "Voting...", "Location voted successfully")
+            );
+
+            buttonUnvoteLocation.setOnAction(
+                    (event) -> SimpleDialog.showIfErrorOrSuccess(
+                            () -> MongoDBManager.getInstance().unvoteLocation(user, getSelectedCity().getCityName()),
+                            "Unvoting...", "Location unvoted successfully")
+            );
+
             buttonShowAirPollutionForecast.setOnAction(
                     (event) -> {
                         HashSet<LocalDate> forecastDates = MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity());
                         changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast(d1), forecastDates);
                     });
-
+        }
         // Admin additional use cases
         if(user.getStatus().equals(User.Status.ADMIN)) {
             buttonShowTopVoted.setOnAction(e -> showTopLocations(10));
@@ -400,8 +409,8 @@ public class Task2GUIController {
             );
 
             // menu events
-            enableDisableMenu.setOnAction((event -> enableDisableUsers()));
-            promoteDemoteMenu.setOnAction((event -> promoteDemoteAdmin()));
+            enableDisableUserMenuItem.setOnAction((event -> enableDisableUsers()));
+            promoteDemoteMenuItem.setOnAction((event -> promoteDemoteAdmin()));
             reloadLocationsMenuItem.setOnAction(event -> SimpleDialog.showIfErrorOrSuccess(
                     () -> MongoDBManager.getInstance().resetLocationList(),
                     "Reloading locations...","Location reload completed"
@@ -636,28 +645,32 @@ public class Task2GUIController {
         }
 
         private void enableDisableUsers(){
-            ArrayList<User> enabledUserList = MongoDBManager.getInstance().getUsersByStatus(0);
-            ArrayList<User> notenabledUserList = MongoDBManager.getInstance().getUsersByStatus(1);
+        ArrayList<User> userList = MongoDBManager.getInstance().getUsersByStatus(0);
+        ArrayList<User> notenabledUserList = MongoDBManager.getInstance().getUsersByStatus(1);
+        userList.addAll(notenabledUserList);
+        System.out.println(notenabledUserList);
 
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisableUser.fxml"));
-            Parent root = null;
-            try {
-                root = fxmlLoader.load();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
 
-            PopupController pc = fxmlLoader.getController();
-            pc.showEnableDisable(enabledUserList, notenabledUserList);
-            setupStage(root,"Enable Or Disable Users");
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisable.fxml"));
+        Parent root = null;
+        try {
+            root = fxmlLoader.load();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        private void promoteDemoteAdmin(){
+        PopupController pc = fxmlLoader.getController();
+        pc.showEnableDisable(userList);
+        setupStage(root,"Enable Or Disable Users");
+        }
+
+
+    private void promoteDemoteAdmin(){
             ArrayList<User> AdminsList = MongoDBManager.getInstance().getUsersByStatus(2);
             ArrayList<User> notAdminsList = MongoDBManager.getInstance().getUsersByStatus(0);
             notAdminsList.addAll(MongoDBManager.getInstance().getUsersByStatus(1));
 
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisableUser.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisable.fxml"));
             Parent root = null;
             try {
                 root = fxmlLoader.load();

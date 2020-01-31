@@ -7,7 +7,7 @@
     -fx-alignment: center;
 }
 
-.label-parameter, .username, .day-date{
+.label-parameter, .username, .day-date, .city-name{
     -fx-font-weight: bold;
 }
 

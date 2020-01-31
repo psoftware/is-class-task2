@@ -43,27 +43,45 @@ public class PopupController {
     public PopupController() {
     }
 
-    public void showEnableDisable(ArrayList<User> enabledUserList, ArrayList<User> notenabledUserList) {
-        enabledUserList.addAll(notenabledUserList);
-        ArrayList<User> allUsers = enabledUserList;
+    public <T> void showEnableDisable(ArrayList<T> allList) {
 
         int i = 0;
-        for (User u : allUsers) {
-            Label user = new Label(u.getUsername());
-            user.getStyleClass().add("username");
-            enableDisablePane.add(user, 0, i);
-            Button button = new Button(u.getStatus().equals(User.Status.ENABLED) ? "Disable" : "Enable");
-            button.setOnAction((event -> {
-                if (button.getText().equals("Disable")) {
-                    button.setText("Enable");
-                    MongoDBManager.getInstance().updateUserStatus(u, 1);
-                } else {
-                    button.setText("Disable");
-                    MongoDBManager.getInstance().updateUserStatus(u, 0);
-                }
-            }));
-            enableDisablePane.add(button, 1, i);
-            i++;
+        for ( T obj  : allList) {
+            if (obj instanceof User) {
+                User u = (User) obj;
+                Label user = new Label(u.getUsername());
+                user.getStyleClass().add("username");
+                enableDisablePane.add(user, 0, i);
+                Button button = new Button(u.getStatus().equals(User.Status.ENABLED) ? "Disable" : "Enable");
+                button.setOnAction((event -> {
+                    if (button.getText().equals("Disable")) {
+                        button.setText("Enable");
+                        MongoDBManager.getInstance().updateUserStatus(u, 1);
+                    } else {
+                        button.setText("Disable");
+                        MongoDBManager.getInstance().updateUserStatus(u, 0);
+                    }
+                }));
+                enableDisablePane.add(button, 1, i);
+                i++;
+            }else if(obj instanceof City){
+                City c = (City) obj;
+                Label city = new Label(c.getCity());
+                city.getStyleClass().add("city-name");
+                enableDisablePane.add(city, 0, i);
+                Button button = new Button(c.isEnabled() ? "Disable" : "Enable");
+                button.setOnAction((event -> {
+                    if (button.getText().equals("Disable")) {
+                        button.setText("Enable");
+                        MongoDBManager.getInstance().updateCityStatus(c, false);
+                    } else {
+                        button.setText("Disable");
+                        MongoDBManager.getInstance().updateCityStatus(c, true);
+                    }
+                }));
+                enableDisablePane.add(button, 1, i);
+                i++;
+            }
         }
     }
 

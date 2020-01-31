@@ -107,10 +107,14 @@ public class MongoDBManager {
         collection.insertMany(FetchAdapter.getInstance().fetchAllCities());
     }
 
-    public ArrayList<City> getLocationList() {
+    public ArrayList<City> getLocationList(User.Status userStatus) {
         ArrayList<City> resultList = new ArrayList<>();
         MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
-        MongoCursor<Document> cursor = collection.find().iterator();
+        MongoCursor<Document> cursor = null;
+        if(userStatus == User.Status.NOTENABLED)
+            cursor = collection.find(new Document("enabled", true)).iterator();
+        else
+            cursor = collection.find().iterator();
         try {
             while (cursor.hasNext()) {
                 /*
@@ -513,8 +517,8 @@ public class MongoDBManager {
 
     public HashSet<LocalDate> getAvailableDates(City city, AppCollection appCollection, String arrayName) {
         List<Bson> pipeline = Arrays.asList(
-                match(and(eq("city", city.getCity()), eq("country", city.getCountry()),
-                        eq("enabled", true))),
+                match(and(eq("city", city.getCity()), eq("country", city.getCountry())
+                        )),
                 unwind("$"+arrayName+""),
                 project(fields(excludeId(), computed("year", eq("$year", "$"+arrayName+".datetime")),
                         computed("month", eq("$month", "$"+arrayName+".datetime")),
@@ -939,7 +943,7 @@ public class MongoDBManager {
             // Reload locations
             MongoDBManager.getInstance().resetLocationList();
             MongoDBManager.getInstance().createLocationIndex();
-            MongoDBManager.getInstance().getLocationList().forEach(c -> System.out.println(c.toString()));
+            MongoDBManager.getInstance().getLocationList(User.Status.ADMIN).forEach(c -> System.out.println(c.toString()));
 
             // Reload users
             MongoDBManager.getInstance().createUserIndex();
