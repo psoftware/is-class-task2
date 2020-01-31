@@ -323,6 +323,7 @@ public class MongoDBManager {
         return cityMap;
     }
 
+
 /*
     private void addDataToCollection (MongoCollection<Document> collection, City city, LocalDate day,
                                       String arrayname, List<Document> mongoHourlyList) {
@@ -734,7 +735,7 @@ public class MongoDBManager {
                         computed("country", "$_id.country"), include("hourlymeasurements"))));
 
         AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
-        return parsePollutionList(aggregateList, "hourlymeasurements");
+        return parseWeatherHourlyList(aggregateList, "hourlymeasurements");
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDate startDate, LocalDate endDate, City selectedCity) {
@@ -831,6 +832,35 @@ public class MongoDBManager {
                 if(!cityMap.containsKey(city))
                     cityMap.put(city, new ArrayList<>());
                 cityMap.get(city).add(m);
+            }
+        }
+
+        return cityMap;
+    }
+
+    private HashMap<City.CityName, ArrayList<MeasureValue>> parseWeatherHourlyList(
+            AggregateIterable<Document> aggregateList, String arrayName) {
+        HashMap<City.CityName, ArrayList<MeasureValue>> cityMap = new HashMap<>();
+
+        for(Document d : aggregateList) { // iterate by city first
+            City.CityName city = new City.CityName(d.getString("country"), d.getString("city"));
+
+            // iterate dates (day only)
+            List<Document> daylist = d.getList(arrayName, Document.class);
+            for(Document dd : daylist) {
+                LocalDateTime day = dd.get("datetime", LocalDateTime.class);
+                // iterate pollutants
+                List<Document> pollutants = dd.getList("conditions", Document.class);
+                for(Document ddd : pollutants) {
+                    MeasureValue m = new MeasureValue(day, city,
+                            ddd.getString("condition"),
+                            ddd.getDouble("value"),
+                            ddd.getString("unit"));
+
+                    if(!cityMap.containsKey(city))
+                        cityMap.put(city, new ArrayList<>());
+                    cityMap.get(city).add(m);
+                }
             }
         }
 
