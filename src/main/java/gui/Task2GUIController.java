@@ -319,14 +319,17 @@ public class Task2GUIController {
 
     public void setSelectedCity(City c) {
         this.selectedCity = c;
-        if(userStatus != User.Status.NOTENABLED)
+        if(userStatus != User.Status.NOTENABLED) {
             paneVoteLocation.setManaged(!getSelectedCity().isEnabled()); // show vote panel only if city is not enabled
-        buttonChangeEnable.setText((!getSelectedCity().isEnabled() ? "Enable" : "Disable") + " City for Non-enabled Users");
-        buttonChangeEnable.setOnAction(e -> {
-            boolean newStatus = MongoDBManager.getInstance().updateCityStatus(c, !c.isEnabled());
-            c.setEnabled(newStatus);
-            setSelectedCity(c);
-        });
+            if (userStatus == User.Status.ADMIN) {
+                buttonChangeEnable.setText((!getSelectedCity().isEnabled() ? "Enable" : "Disable") + " City for Non-enabled Users");
+                buttonChangeEnable.setOnAction(e -> {
+                    boolean newStatus = MongoDBManager.getInstance().updateCityStatus(c, !c.isEnabled());
+                    c.setEnabled(newStatus);
+                    setSelectedCity(c);
+                });
+            }
+        }
     }
 
     private void afterMapIsInitialized(User user) {
