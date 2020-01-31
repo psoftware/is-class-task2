@@ -270,15 +270,11 @@ public class PopupController {
 
     public void showHourlyWeather(ArrayList<MeasureValue> hWeather){
         final String[] PARAMETERS_LIST = DarkSkyFetcher.MEASURE_UNITS.keySet().toArray(new String[1]);
-
         HashMap<String, Integer> PARAMETERS_MAP = new HashMap<>();
         for(int i=0; i<PARAMETERS_LIST.length; i++) {
-            String input = PARAMETERS_LIST[i];
-            input = Character.toUpperCase(input.charAt(0)) + input.substring(1);
-            Label param = new Label(input.replaceAll("(\\p{Ll})(\\p{Lu})","$1 $2"));
+            Label param = new Label(PARAMETERS_LIST[i]);
             param.getStyleClass().add("label-parameter");
-
-            measurementsPane.add(param, 0, i+1);
+            measurementsPane.add(param, i+1, 0);
             PARAMETERS_MAP.put(PARAMETERS_LIST[i], i);
         }
 
@@ -288,17 +284,15 @@ public class PopupController {
         hWeather.sort((c1,c2) -> (c1.datetime.compareTo(c2.datetime) == 0) ?
                 c1.name.compareTo(c2.name) : c1.datetime.compareTo(c2.datetime));
 
-
-        LocalDate lastDate = null;
+        LocalDateTime lastDate = null;
         int j = 0;
         for(MeasureValue m : hWeather) {
-            if(!m.datetime.toLocalDate().equals(lastDate)) {
-                lastDate = m.datetime.toLocalDate();
+            if(!m.datetime.equals(lastDate)) {
+                lastDate = m.datetime;
                 j++;
-                Label day = new Label(lastDate.toString());
-                day.getStyleClass().add("day-date");
-                day.setOnMouseClicked((event -> Task2GUIController.INSTANCE.showHourlyWeather(m.datetime)));
-                measurementsPane.add(day, j, 0);
+                Label hour = new Label(m.datetime.toString());
+                hour.getStyleClass().add("day-date");
+                measurementsPane.add(hour, 0, j);
             }
 
             String valuestring = (m.value instanceof Double) ? df.format(m.value) : m.value.toString();
@@ -306,53 +300,52 @@ public class PopupController {
             if(!PARAMETERS_MAP.containsKey(m.name))
                 System.out.println("Invalid key " + m.name);
             else
-            if(m.name.equals("sky")) {
-                ImageView iv = new ImageView();
-                iv.getStyleClass().add("weather-icon");
-                Image i;
-                switch (valuestring) {
-                    case "clear-day":
-                    case "clear-night":
-                        i = new Image("/weather-icons/010-sun.png",
-                                30.0, 30.0, true, true);
-                        break;
-                    case "partly-cloudy-day":
-                    case "partly-cloudy-night":
-                        i = new Image("/weather-icons/046-cloudy.png",
-                                30.0, 30.0, true, true);
-                        break;
-                    case "cloudy":
-                        i = new Image("/weather-icons/047-cloud.png",
-                                30.0, 30.0, true, true);
-                        break;
-                    case "rain":
-                        i = new Image("/weather-icons/023-rain.png",
-                                30.0, 30.0, true, true);
-                        break;
-                    case "snow":
-                        i = new Image("/weather-icons/019-snowflake.png",
-                                30.0, 30.0, true, true);
-                        break;
-                    case "sleet":
-                        i = new Image("/weather-icons/017-snowy-1.png",
-                                30.0, 30.0, true, true);
-                        break;
-                    case "wind":
-                        i = new Image("/weather-icons/004-wind.png",
-                                30.0, 30.0, true, true);
-                        break;
-                    default: // fog
-                        i = new Image("/weather-icons/041-fog.png",
-                                30.0, 30.0, true, true);
-                        break;
-                }
-                iv.setImage(i);
-                measurementsPane.add(iv, j, PARAMETERS_MAP.get(m.name) + 1);
-            }else
-                measurementsPane.add(new Label(valuestring + " " + m.unit), j, PARAMETERS_MAP.get(m.name) + 1);
-
+                if(m.name.equals("sky")) {
+                    ImageView iv = new ImageView();
+                    iv.getStyleClass().add("weather-icon");
+                    Image i;
+                    switch (valuestring) {
+                        case "clear-day":
+                        case "clear-night":
+                            i = new Image("/weather-icons/010-sun.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                        case "partly-cloudy-day":
+                        case "partly-cloudy-night":
+                            i = new Image("/weather-icons/046-cloudy.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                        case "cloudy":
+                            i = new Image("/weather-icons/047-cloud.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                        case "rain":
+                            i = new Image("/weather-icons/023-rain.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                        case "snow":
+                            i = new Image("/weather-icons/019-snowflake.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                        case "sleet":
+                            i = new Image("/weather-icons/017-snowy-1.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                        case "wind":
+                            i = new Image("/weather-icons/004-wind.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                        default: // fog
+                            i = new Image("/weather-icons/041-fog.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                    }
+                    iv.setImage(i);
+                    measurementsPane.add(iv, j, PARAMETERS_MAP.get(m.name) + 1);
+                }else
+                    measurementsPane.add(new Label(valuestring + " " + m.unit), j, PARAMETERS_MAP.get(m.name) + 1);
         }
-        measurementsDialogTitle.setText("Hourly Weather Parameters");
+        measurementsDialogTitle.setText("Hourly Weather Parameters Values");
     }
 
 }

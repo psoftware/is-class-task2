@@ -548,7 +548,6 @@ public class MongoDBManager {
 
         List<Bson> pipeline = Arrays.asList(
                     match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
-                        eq("enabled", true),
                             eq("city", selectedCity.getCity()),
                             eq("country", selectedCity.getCountry()))),
                     unwind("$pollutionMeasurements"),
@@ -594,7 +593,7 @@ public class MongoDBManager {
 
         List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart",
                 endDate), gte("periodEnd",
-                startDate), eq("enabled", true), eq("city", selectedCity.getCity()), eq("country", selectedCity.getCountry()))),
+                startDate), eq("city", selectedCity.getCity()), eq("country", selectedCity.getCountry()))),
                 unwind("$pollutionMeasurements"),
                 match(and(lte("pollutionMeasurements.datetime", endDate),
                         gte("pollutionMeasurements.datetime", startDate))),
@@ -716,7 +715,7 @@ public class MongoDBManager {
 
     private HashMap<City.CityName, ArrayList<MeasureValue>> getDailyWeather(LocalDateTime startDate, LocalDateTime endDate,
                                                                             String arrayName, AppCollection collectionName, City selectedCity) {
-        List<Bson> pipeline = Arrays.asList(match(and(lte("periodStart", endDate), gte("periodEnd", startDate), eq("enabled", true),
+        List<Bson> pipeline = Arrays.asList(match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
                 eq("city", selectedCity.getCity()), eq("country", selectedCity.getCountry()))),
                 unwind("$"+arrayName),
                 match(and(lte(arrayName+".datetime", endDate), gte(arrayName+".datetime", startDate))),

@@ -614,7 +614,7 @@ public class Task2GUIController {
         LocalDateTime end = start.plusDays(1);
 
         HashMap<City.CityName, ArrayList<MeasureValue>> hourlyWeather =
-                MongoDBManager.getInstance().getHourlyPollution(start, end, selectedCity);
+                MongoDBManager.getInstance().getHourlyWeather(start, end, selectedCity);
         ArrayList<MeasureValue> hWeather = hourlyWeather.get(selectedCity.getCityName());
 
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));

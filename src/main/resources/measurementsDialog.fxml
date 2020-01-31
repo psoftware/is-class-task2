@@ -25,6 +25,7 @@
                 <ColumnConstraints halignment="CENTER"/>
                 <ColumnConstraints halignment="CENTER"/>
                 <ColumnConstraints halignment="CENTER"/>
+                <ColumnConstraints halignment="CENTER"/>
             </columnConstraints>
         </GridPane>
     </VBox>
