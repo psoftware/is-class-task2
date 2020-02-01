@@ -295,7 +295,10 @@ public class PopupController {
                 measurementsPane.add(hour, 0, j);
             }
 
-            String valuestring = (m.value instanceof Double) ? df.format(m.value) : m.value.toString();
+            String valuestring =
+                    (m.value instanceof Double) ?
+                            df.format(m.value) :
+                            m.value.toString();
 
             if(!PARAMETERS_MAP.containsKey(m.name))
                 System.out.println("Invalid key " + m.name);
@@ -306,13 +309,19 @@ public class PopupController {
                     Image i;
                     switch (valuestring) {
                         case "clear-day":
-                        case "clear-night":
                             i = new Image("/weather-icons/010-sun.png",
                                     30.0, 30.0, true, true);
                             break;
+                        case "clear-night":
+                            i = new Image("/weather-icons/048-night.png",
+                                    30.0, 30.0, true, true);
+                            break;
                         case "partly-cloudy-day":
-                        case "partly-cloudy-night":
                             i = new Image("/weather-icons/046-cloudy.png",
+                                    30.0, 30.0, true, true);
+                            break;
+                        case "partly-cloudy-night":
+                            i = new Image("/weather-icons/045-cloudy-1.png",
                                     30.0, 30.0, true, true);
                             break;
                         case "cloudy":
@@ -341,9 +350,9 @@ public class PopupController {
                             break;
                     }
                     iv.setImage(i);
-                    measurementsPane.add(iv, j, PARAMETERS_MAP.get(m.name) + 1);
+                    measurementsPane.add(iv, PARAMETERS_MAP.get(m.name) + 1, j);
                 }else
-                    measurementsPane.add(new Label(valuestring + " " + m.unit), j, PARAMETERS_MAP.get(m.name) + 1);
+                    measurementsPane.add(new Label(valuestring + " " + m.unit), PARAMETERS_MAP.get(m.name) + 1, j);
         }
         measurementsDialogTitle.setText("Hourly Weather Parameters Values");
     }
