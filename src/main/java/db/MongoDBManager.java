@@ -36,6 +36,8 @@ import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Projections.*;
 import static com.mongodb.client.model.Sorts.descending;
 
+
+
 public class MongoDBManager {
     // This is needed to switch default DATE_TIME decoding from Date to LocalDateTime
     public static final DocumentCodecProvider documentCodecProvider;
@@ -698,18 +700,12 @@ public class MongoDBManager {
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyWeather(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
-        if(startDate.compareTo(endDate) > 0)
-            return null;
 
         MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName());
 
-        List<Bson> pipeline = Arrays.asList(
-                match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
-                        eq("city", selectedCity.getCity()),
-                        eq("country", selectedCity.getCountry()))),
-                unwind("$weatherCondition"),
-                match(and(lte("weatherCondition.datetime", endDate),
-                        gte("weatherCondition.datetime", startDate))),
+        List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart", endDate), gte("periodEnd", startDate),
+                eq("enabled", true))), unwind("$weatherCondition"),
+                match(and(lt("weatherCondition.datetime", endDate), gte("weatherCondition.datetime", startDate))),
                 unwind("$weatherCondition.measurements"),
                 project(fields(include("city", "country", "coordinates"), excludeId(),
                         computed("weatherCondition.year", eq("$year", "$weatherCondition.datetime")),
@@ -721,21 +717,21 @@ public class MongoDBManager {
                         eq("year", "$weatherCondition.year"), eq("month", "$weatherCondition.month"),
                         eq("day", "$weatherCondition.day"), eq("hour", "$weatherCondition.hour"),
                         eq("condition", "$measurement.name"), eq("unit", "$measurement.unit")),
-                        avg("value", "$measurement.value")),
-                group(and(eq("city", "$_id.city"), eq("country", "$_id.country"),
-                        eq("datetime", eq("$dateFromParts", and(eq("year", "$_id.year"),
-                                eq("month", "$_id.month"), eq("day", "$_id.day"),
-                                eq("hour", "$_id.hour"))))),
-                        push("measurements", and(eq("condition", "$_id.condition"),
-                                eq("unit", "$_id.unit"), eq("value", "$value")))),
+                        avg("avg", "$measurement.value"), push("list", and(eq("hour", "$weatherCondition.hour"),
+                                eq("sky", "$measurement.value")))),
+                new Document("$project", new Document("_id", "$_id").append("value", new Document("$cond", new Document("if",
+                        new Document("$eq", Arrays.asList("$avg", new BsonNull()))).append("then", "$list").append("else", "$avg")))),
                 group(and(eq("city", "$_id.city"), eq("country", "$_id.country")),
-                        push("hourlymeasurements", and(eq("datetime", "$_id.datetime"),
-                                eq("conditions", "$measurements")))),
+                        push("measurements", and(eq("datetime", eq("$dateFromParts",
+                        and(eq("year", "$_id.year"), eq("month", "$_id.month"),
+                        eq("day", "$_id.day"), eq("hour", "$_id.hour")))),
+                        eq("condition", "$_id.condition"), eq("unit", "$_id.unit"),
+                        eq("value", "$value")))),
                 project(fields(excludeId(), computed("city", "$_id.city"),
-                        computed("country", "$_id.country"), include("hourlymeasurements"))));
+                        computed("country", "$_id.country"), include("measurements"))));
 
         AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
-        return parseWeatherHourlyList(aggregateList, "hourlymeasurements");
+        return parseWeatherList(aggregateList, "");
     }
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getDailyPastWeather(LocalDate startDate, LocalDate endDate, City selectedCity) {
@@ -832,35 +828,6 @@ public class MongoDBManager {
                 if(!cityMap.containsKey(city))
                     cityMap.put(city, new ArrayList<>());
                 cityMap.get(city).add(m);
-            }
-        }
-
-        return cityMap;
-    }
-
-    private HashMap<City.CityName, ArrayList<MeasureValue>> parseWeatherHourlyList(
-            AggregateIterable<Document> aggregateList, String arrayName) {
-        HashMap<City.CityName, ArrayList<MeasureValue>> cityMap = new HashMap<>();
-
-        for(Document d : aggregateList) { // iterate by city first
-            City.CityName city = new City.CityName(d.getString("country"), d.getString("city"));
-
-            // iterate dates (day only)
-            List<Document> daylist = d.getList(arrayName, Document.class);
-            for(Document dd : daylist) {
-                LocalDateTime day = dd.get("datetime", LocalDateTime.class);
-                // iterate pollutants
-                List<Document> pollutants = dd.getList("conditions", Document.class);
-                for(Document ddd : pollutants) {
-                    MeasureValue m = new MeasureValue(day, city,
-                            ddd.getString("condition"),
-                            ddd.getDouble("value"),
-                            ddd.getString("unit"));
-
-                    if(!cityMap.containsKey(city))
-                        cityMap.put(city, new ArrayList<>());
-                    cityMap.get(city).add(m);
-                }
             }
         }
 
