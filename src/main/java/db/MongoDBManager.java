@@ -709,8 +709,8 @@ public class MongoDBManager {
 
     public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyWeather(LocalDateTime startDate, LocalDateTime endDate, String arrayName, AppCollection collectionName, City selectedCity) {
 
-        List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart", endDate), gte("periodEnd", startDate),
-                eq("enabled", true))), unwind("$"+arrayName),
+        List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart", endDate), gte("periodEnd", startDate)
+                )), unwind("$"+arrayName),
                 match(and(lt(arrayName+".datetime", endDate), gte("weatherCondition.datetime", startDate))),
                 unwind("$"+arrayName+".measurements"),
                 project(fields(include("city", "country", "coordinates"), excludeId(),

@@ -181,7 +181,7 @@ public class PopupController {
         measurementsDialogTitle.setText("Hourly Air Pollution Values");
     }
 
-    public void showWeather(ArrayList<MeasureValue> dailyParameters) {
+    public void showWeather(ArrayList<MeasureValue> dailyParameters, String collection) {
         final String[] PARAMETERS_LIST = DarkSkyFetcher.MEASURE_UNITS.keySet().toArray(new String[1]);
 
         HashMap<String, Integer> PARAMETERS_MAP = new HashMap<>();
@@ -210,7 +210,10 @@ public class PopupController {
                 j++;
                 Label day = new Label(lastDate.toString());
                 day.getStyleClass().add("day-date");
-                day.setOnMouseClicked((event -> Task2GUIController.INSTANCE.showHourlyWeather(m.datetime)));
+                if(collection.equals("forecast"))
+                    day.setOnMouseClicked((event -> Task2GUIController.INSTANCE.showHourlyWeatherForecast(m.datetime)));
+                else
+                    day.setOnMouseClicked((event -> Task2GUIController.INSTANCE.showHourlyWeatherHistory(m.datetime)));
                 measurementsPane.add(day, j, 0);
             }
 
@@ -269,6 +272,7 @@ public class PopupController {
     }
 
     public void showHourlyWeather(ArrayList<MeasureValue> hWeather){
+        System.out.println(hWeather);
         final String[] PARAMETERS_LIST = DarkSkyFetcher.MEASURE_UNITS.keySet().toArray(new String[1]);
         HashMap<String, Integer> PARAMETERS_MAP = new HashMap<>();
         for(int i=0; i<PARAMETERS_LIST.length; i++) {

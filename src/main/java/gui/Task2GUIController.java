@@ -522,7 +522,7 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showWeather(dailyWeather);
+            pc.showWeather(dailyWeather, "past");
             setupStage(root,"Weather History");
         }
 
@@ -540,7 +540,7 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showWeather(dailyWeather);
+            pc.showWeather(dailyWeather, "forecast");
             setupStage(root,"Weather Forecast");
         }
 
@@ -561,7 +561,7 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showWeather(result);
+            pc.showWeather(result, "");
             setupStage(root,"Weather Forecast Reliability");
         }
 
@@ -610,7 +610,7 @@ public class Task2GUIController {
 
         }
 
-    public void showHourlyWeather(LocalDateTime start){
+    public void showHourlyWeatherHistory(LocalDateTime start){
         LocalDateTime end = start.plusDays(1);
 
         HashMap<City.CityName, ArrayList<MeasureValue>> hourlyWeather =
@@ -624,8 +624,24 @@ public class Task2GUIController {
 
         PopupController pc = fxmlLoader.getController();
         pc.showHourlyWeather(hWeather);
-        setupStage(root,"Hourly Weather");
+        setupStage(root,"Hourly Weather History");
+    }
 
+    public void showHourlyWeatherForecast(LocalDateTime start){
+        LocalDateTime end = start.plusDays(1);
+
+        HashMap<City.CityName, ArrayList<MeasureValue>> hourlyWeather =
+                MongoDBManager.getInstance().getHourlyForecastWeather(start, end, selectedCity);
+        ArrayList<MeasureValue> hWeather = hourlyWeather.get(selectedCity.getCityName());
+
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("measurementsDialog.fxml"));
+        Parent root = null;
+        try { root = fxmlLoader.load();
+        } catch (IOException e) { e.printStackTrace(); }
+
+        PopupController pc = fxmlLoader.getController();
+        pc.showHourlyWeather(hWeather);
+        setupStage(root,"Hourly Weather Forecast");
     }
 
         private void showAirPollutionForecast(LocalDate start) {
