@@ -699,25 +699,31 @@ public class MongoDBManager {
         }
     }
 
-    public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyWeather(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyForecastWeather(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
+        return getHourlyWeather(startDate, endDate, "weatherForecast", AppCollection.FORECAST_WEATHER, selectedCity);
+    }
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName());
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyPastWeather(LocalDateTime startDate, LocalDateTime endDate, City selectedCity) {
+        return getHourlyWeather(startDate, endDate, "weatherCondition", AppCollection.PAST_WEATHER, selectedCity);
+    }
+
+    public HashMap<City.CityName, ArrayList<MeasureValue>> getHourlyWeather(LocalDateTime startDate, LocalDateTime endDate, String arrayName, AppCollection collectionName, City selectedCity) {
 
         List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart", endDate), gte("periodEnd", startDate),
-                eq("enabled", true))), unwind("$weatherCondition"),
-                match(and(lt("weatherCondition.datetime", endDate), gte("weatherCondition.datetime", startDate))),
-                unwind("$weatherCondition.measurements"),
+                eq("enabled", true))), unwind("$"+arrayName),
+                match(and(lt(arrayName+".datetime", endDate), gte("weatherCondition.datetime", startDate))),
+                unwind("$"+arrayName+".measurements"),
                 project(fields(include("city", "country", "coordinates"), excludeId(),
-                        computed("weatherCondition.year", eq("$year", "$weatherCondition.datetime")),
-                        computed("weatherCondition.month", eq("$month", "$weatherCondition.datetime")),
-                        computed("weatherCondition.day", eq("$dayOfMonth", "$weatherCondition.datetime")),
-                        computed("weatherCondition.hour", eq("$hour", "$weatherCondition.datetime")),
-                        computed("measurement", "$weatherCondition.measurements"))),
+                        computed("weather.year", eq("$year", "$"+arrayName+".datetime")),
+                        computed("weather.month", eq("$month", "$"+arrayName+".datetime")),
+                        computed("weather.day", eq("$dayOfMonth", "$"+arrayName+".datetime")),
+                        computed("weather.hour", eq("$hour", "$"+arrayName+".datetime")),
+                        computed("measurement", "$"+arrayName+".measurements"))),
                 group(and(eq("city", "$city"), eq("country", "$country"),
-                        eq("year", "$weatherCondition.year"), eq("month", "$weatherCondition.month"),
-                        eq("day", "$weatherCondition.day"), eq("hour", "$weatherCondition.hour"),
+                        eq("year", "$weather.year"), eq("month", "$weather.month"),
+                        eq("day", "$weather.day"), eq("hour", "$weather.hour"),
                         eq("condition", "$measurement.name"), eq("unit", "$measurement.unit")),
-                        avg("avg", "$measurement.value"), push("list", and(eq("hour", "$weatherCondition.hour"),
+                        avg("avg", "$measurement.value"), push("list", and(eq("hour", "$weather.hour"),
                                 eq("sky", "$measurement.value")))),
                 new Document("$project", new Document("_id", "$_id").append("value", new Document("$cond", new Document("if",
                         new Document("$eq", Arrays.asList("$avg", new BsonNull()))).append("then", "$list").append("else", "$avg")))),
@@ -730,6 +736,7 @@ public class MongoDBManager {
                 project(fields(excludeId(), computed("city", "$_id.city"),
                         computed("country", "$_id.country"), include("measurements"))));
 
+        MongoCollection<Document> collection = database.getCollection(collectionName.getName());
         AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
         return parseWeatherList(aggregateList, "");
     }
