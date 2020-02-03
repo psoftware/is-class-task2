@@ -55,7 +55,12 @@ public class MongoDBManager {
             MongoClientSettings.getDefaultCodecRegistry()
     );
 
-    private final static String MONGO_URL = "mongodb://localhost:27017";
+    //NO REPLICA
+    //private final static String MONGO_URL = "mongodb://localhost:27017";
+
+    //WITH REPLICA
+    private final static String MONGO_URL = "mongodb://localhost:27017,localhost:27017,localhost:27017/?replicaSet=rs0";
+
     private final static String DATABASE_NAME = "task2";
 
     enum AppCollection {
@@ -252,7 +257,7 @@ public class MongoDBManager {
     }
 
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
+        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName()).withReadPreference(ReadPreference.primary());
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> pollutionData = FetchAdapter.getInstance().fetchPollutionData(city, d);
             addDataToCollection(collection, city, d, "pollutionMeasurements", pollutionData);
@@ -263,7 +268,7 @@ public class MongoDBManager {
         if(startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now()))
             throw new IllegalArgumentException("Cannot fetch past weather for future days");
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName());
+        MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName()).withReadPreference(ReadPreference.primary());
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> mongoHourlyList = FetchAdapter.getInstance().fetchHistoricalData(city, d);
             addDataToCollection(collection, city, d, "weatherCondition", mongoHourlyList);
@@ -274,7 +279,7 @@ public class MongoDBManager {
         if(startDate.isBefore(LocalDate.now()) || endDate.isBefore(LocalDate.now()))
             throw new IllegalArgumentException("Cannot fetch forecast weather for past days");
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.FORECAST_WEATHER.getName());
+        MongoCollection<Document> collection = database.getCollection(AppCollection.FORECAST_WEATHER.getName()).withReadPreference(ReadPreference.primary());
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> mongoHourlyList = FetchAdapter.getInstance().fetchForecastData(city, d);
             addDataToCollection(collection, city, d, "weatherForecast", mongoHourlyList);
@@ -326,7 +331,7 @@ public class MongoDBManager {
     }
 
 
-/*
+
     private void addDataToCollection (MongoCollection<Document> collection, City city, LocalDate day,
                                       String arrayname, List<Document> mongoHourlyList) {
         //start a client session
@@ -335,8 +340,8 @@ public class MongoDBManager {
         // define options to use for the transaction
         TransactionOptions txnOptions = TransactionOptions.builder()
                 .readPreference(ReadPreference.primary())
-                .readConcern(ReadConcern.MAJORITY)      // study better
-                .writeConcern(WriteConcern.MAJORITY)    // study better
+                .readConcern(ReadConcern.MAJORITY)
+                .writeConcern(WriteConcern.MAJORITY)
                 .build();
 
         //define the sequence of operations to perform inside the transaction
@@ -367,8 +372,7 @@ public class MongoDBManager {
                 System.out.println(FetchUtils.toJson(filterDoc));
                 System.out.println(FetchUtils.toJson(updatedoc));
 
-                if (collection.updateOne(filterDoc, updatedoc, new UpdateOptions().upsert(true)).getMatchedCount() > 0) {
-                    //array of operation to execute in bulk
+                if (collection.updateOne(filterDoc, updatedoc, new UpdateOptions().upsert(true)).getMatchedCount() > 0) {            //array of operation to execute in bulk
                     List<UpdateOneModel<Document>> operations = new ArrayList<UpdateOneModel<Document>>();
 
                     for (Document measurement : mongoHourlyList) {
@@ -381,50 +385,24 @@ public class MongoDBManager {
                                 .append("periodStart", weekStart)
                                 .append("periodEnd", weekEnd);
 
-                        String location = (String) measurement.get("location");
-                        if (arrayname.equals("pollutionMeasurements"))
-                            findMeasurementDoc.append(arrayname, new Document("$elemMatch", new Document("datetime", datetime).append("location", location)));
-                        else
-                            findMeasurementDoc.append(arrayname + ".datetime", datetime);
+                        //pull measurement if exists
+                        Document pullDocument;
+                        if (arrayname.equals("pollutionMeasurements")) {
+                            String location = (String) measurement.get("location");
+                            pullDocument = new Document("$pull", new Document(arrayname, new Document("location", location).append("datetime", datetime)));
+                        } else
+                            pullDocument = new Document("$pull", new Document(arrayname, new Document("datetime", datetime)));
 
-                        //if the measurement not exist add it
-                        if (!collection.find(findMeasurementDoc).iterator().hasNext()) {
-                            Document addMeasurementDoc = new Document("$push", new Document(arrayname, new Document("datetime", datetime).append("measurements", newMeasures)));
-                            operations.add(new UpdateOneModel<>(filterDoc, addMeasurementDoc));
-                        }
-                        else {
-                            List<Document> arrayFilters = new ArrayList<Document>();
-                            switch (arrayname) {
-                                case "pollutionMeasurements":
-                                    arrayFilters.add(new Document("t.datetime", datetime).append("t.location", location));
-                                    break;
-                                default: arrayFilters.add(new Document("t.datetime", datetime));
-                                    break;
-                            }
-                            UpdateOptions options = new UpdateOptions().arrayFilters(arrayFilters);
-
-
-                            //pull existing measures
-                        //    List<String> measurementNames = new ArrayList<>();
-                        //   for (Document dd: newMeasures) {
-                        //        measurementNames.add((String) dd.get("name"));
-                            }
-                        //    Document pullDoc = new Document("$pull", new Document(arrayname+".$[t].measurements", new Document("name", new Document("$in", measurementNames))));
-                        //    operations.add(new UpdateOneModel<>(filterDoc, pullDoc, options));
-
-                            //push new measures
-                        //    Document pushDoc = new Document("$push", new Document(arrayname+".$[t].measurements", new Document("$each", newMeasures)));
-                        //    operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
-
-
-                            //push new measures
-                            Document pushDoc = new Document("$set", new Document(arrayname+".$[t].measurements", newMeasures));
-                            operations.add(new UpdateOneModel<>(filterDoc, pushDoc, options));
-                        }
+                        operations.add(new UpdateOneModel<>(filterDoc, pullDocument));
                     }
 
-                    if (operations.size() > 0)
+                    Document pushDocument = new Document("$push", new Document(arrayname, new Document("$each", mongoHourlyList)));
+                    operations.add(new UpdateOneModel<>(filterDoc, pushDocument));
+
+                    if (operations.size() > 0) {
                         collection.bulkWrite((List<? extends WriteModel<? extends Document>>) operations);
+                        System.out.println("Bulk Update Done");
+                    }
                 }
                 return "Inserted without duplicates";
             }
@@ -440,9 +418,9 @@ public class MongoDBManager {
             clientSession.close();
         }
     }
-*/
 
-    private void addDataToCollection (MongoCollection<Document> collection, City city, LocalDate day,
+/*
+    private void addDataToCollection2 (MongoCollection<Document> collection, City city, LocalDate day,
                                       String arrayname, List<Document> mongoHourlyList) {
 
         LocalDateTime[] weekrange = FetchUtils.getWeekPeriod(day);
@@ -504,6 +482,8 @@ public class MongoDBManager {
             }
         }
     }
+
+ */
 
 
     public HashSet<LocalDate> getPastWeatherAvailableDates(City city) {
