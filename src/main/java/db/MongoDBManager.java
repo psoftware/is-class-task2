@@ -711,7 +711,7 @@ public class MongoDBManager {
 
         List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart", endDate), gte("periodEnd", startDate)
                 )), unwind("$"+arrayName),
-                match(and(lt(arrayName+".datetime", endDate), gte("weatherCondition.datetime", startDate))),
+                match(and(lt(arrayName+".datetime", endDate), gte(arrayName + ".datetime", startDate))),
                 unwind("$"+arrayName+".measurements"),
                 project(fields(include("city", "country", "coordinates"), excludeId(),
                         computed("weather.year", eq("$year", "$"+arrayName+".datetime")),
