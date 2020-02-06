@@ -11,6 +11,7 @@ import main.java.City;
 import main.java.User;
 import main.java.fetch.FetchAdapter;
 import main.java.fetch.FetchUtils;
+import main.java.gui.ProgressHandler;
 import main.java.measures.MeasureValue;
 import org.bson.BsonNull;
 import org.bson.BsonType;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 
@@ -255,32 +257,54 @@ public class MongoDBManager {
     }
 
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
+        loadPollutionFromAPI(city, startDate, endDate, null);
+    }
+
+    public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate, ProgressHandler progress) throws IOException {
+        if(progress != null) progress.setMaxProgress((int)ChronoUnit.DAYS.between(startDate, endDate));
+
         MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
+
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> pollutionData = FetchAdapter.getInstance().fetchPollutionData(city, d);
             addDataToCollection(collection, city, d, "pollutionMeasurements", pollutionData);
+            if(progress != null) progress.increaseProgress();
         }
     }
 
     public void loadPastWeatherFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
+        loadPastWeatherFromAPI(city, startDate, endDate, null);
+    }
+
+    public void loadPastWeatherFromAPI(City city, LocalDate startDate, LocalDate endDate, ProgressHandler progress) throws IOException {
         if(startDate.isAfter(LocalDate.now()) || endDate.isAfter(LocalDate.now()))
             throw new IllegalArgumentException("Cannot fetch past weather for future days");
+
+        if(progress != null) progress.setMaxProgress((int)ChronoUnit.DAYS.between(startDate, endDate));
 
         MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName());
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> mongoHourlyList = FetchAdapter.getInstance().fetchHistoricalData(city, d);
             addDataToCollection(collection, city, d, "weatherCondition", mongoHourlyList);
+            if(progress != null) progress.increaseProgress();
         }
     }
 
     public void loadForecastWeatherFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
+        loadForecastWeatherFromAPI(city, startDate, endDate, null);
+    }
+
+    public void loadForecastWeatherFromAPI(City city, LocalDate startDate, LocalDate endDate, ProgressHandler progress) throws IOException {
         if(startDate.isBefore(LocalDate.now()) || endDate.isBefore(LocalDate.now()))
             throw new IllegalArgumentException("Cannot fetch forecast weather for past days");
+
+        if(progress != null) progress.setMaxProgress((int)ChronoUnit.DAYS.between(startDate, endDate));
 
         MongoCollection<Document> collection = database.getCollection(AppCollection.FORECAST_WEATHER.getName());
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> mongoHourlyList = FetchAdapter.getInstance().fetchForecastData(city, d);
             addDataToCollection(collection, city, d, "weatherForecast", mongoHourlyList);
+            if(progress != null) progress.increaseProgress();
         }
     }
 

@@ -391,22 +391,22 @@ public class Task2GUIController {
             buttonShowTopVoted.setOnAction(e -> showTopLocations(10));
             buttonFetchPollution.setOnAction(e ->
                 changeTimePane(TimePaneType.DATERANGE,
-                        (d1, d2) -> new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
-                                        .loadPollutionFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue()),
+                        (d1, d2) -> new LoadingWindow().showAndWaitCallableWithBar((progress) -> MongoDBManager.getInstance()
+                                        .loadPollutionFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue(), progress),
                                 "Loading Pollution Measures...", "Pollution measures loading success")
                 )
             );
             buttonFetchPastWeather.setOnAction(e ->
                     changeTimePane(TimePaneType.DATERANGE,
-                            (d1, d2) -> new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
-                                            .loadPastWeatherFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue()),
+                            (d1, d2) -> new LoadingWindow().showAndWaitCallableWithBar((progress) -> MongoDBManager.getInstance()
+                                            .loadPastWeatherFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue(), progress),
                                     "Loading Past Weather Measures...", "Past Weather measures loading completed")
                     )
             );
             buttonFetchForecastWeather.setOnAction(e ->
                     changeTimePane(TimePaneType.DATERANGE,
-                            (d1, d2) -> new LoadingWindow().showAndWaitCallable(() -> MongoDBManager.getInstance()
-                                            .loadForecastWeatherFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue()),
+                            (d1, d2) -> new LoadingWindow().showAndWaitCallableWithBar((progress) -> MongoDBManager.getInstance()
+                                            .loadForecastWeatherFromAPI(selectedCity, datepickerStart.getValue(), datepickerEnd.getValue(), progress),
                                     "Loading Forecast Weather Measures...", "Forecast Weather measures loading completed")
                     )
             );
