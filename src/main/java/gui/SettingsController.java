@@ -11,6 +11,9 @@ import java.io.IOException;
 
 public class SettingsController {
     @FXML
+    TextField mongodbUrl;
+
+    @FXML
     TextField darkskyApiKey;
 
     @FXML
@@ -32,6 +35,7 @@ public class SettingsController {
     Button buttonCancel;
 
     public void initialize(Stage stage, Runnable onEventOk) {
+        mongodbUrl.setText(SettingsManager.MAINSETTINGS.get("mongodb", "url"));
         darkskyApiKey.setText(SettingsManager.MAINSETTINGS.get("darksky", "apiKey"));
 
         Boolean debugModeSelected = SettingsManager.MAINSETTINGS.get("darksky", "debugMode");
@@ -47,6 +51,7 @@ public class SettingsController {
     }
 
     public void saveSettings() {
+        SettingsManager.MAINSETTINGS.set("mongodb", "url", mongodbUrl.getText());
         SettingsManager.MAINSETTINGS.set("darksky", "apiKey", darkskyApiKey.getText());
         SettingsManager.MAINSETTINGS.set("darksky", "debugMode", debugModeYes.isSelected());
         SettingsManager.MAINSETTINGS.set("darksky", "localCache", localCacheYes.isSelected());

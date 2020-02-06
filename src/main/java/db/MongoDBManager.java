@@ -55,7 +55,10 @@ public class MongoDBManager {
             MongoClientSettings.getDefaultCodecRegistry()
     );
 
-    private final static String MONGO_URL = "mongodb://localhost:27017";
+    private final String MONGO_URL =
+            SettingsManager.MAINSETTINGS.getOrSetDefault("mongodb", "url", "mongodb://localhost:27017");
+    //private final static String MONGO_URL = "mongodb://replica1:27017,replica2:27017,replica3:27017/?replicaSet=rs0";
+
     private final static String DATABASE_NAME = "task2";
 
     enum AppCollection {
