@@ -1,5 +1,6 @@
 package main.java.gui;
 
+import com.mongodb.lang.Nullable;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -56,7 +57,7 @@ public class LoadingWindow implements ProgressHandler {
         stage.setTitle("Loading");
     }
 
-    private void executeThreadOnFx(Thread t, String loadingtext, String successmsg) {
+    private void executeThreadOnFx(Thread t) {
         // on exception: show error and wait for window closing, then close this window
         t.setUncaughtExceptionHandler((t1, e) -> Platform.runLater( () -> {
             SimpleDialog.showErrorDialog(e.getMessage());
@@ -67,7 +68,7 @@ public class LoadingWindow implements ProgressHandler {
         stage.showAndWait();
     }
 
-    public void showAndWaitCallable(ThrowingRunnable<Exception> bwork, String loadingtext, String successmsg) {
+    public void showAndWaitCallable(ThrowingRunnable<Exception> bwork, String loadingtext, @Nullable String successmsg) {
         setupStage(loadingtext);
         progressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
 
@@ -76,14 +77,15 @@ public class LoadingWindow implements ProgressHandler {
                 bwork.run();
                 Platform.runLater(() -> {
                     stage.close();
-                    SimpleDialog.showConfirmDialog(successmsg);
+                    if(successmsg != null)
+                        SimpleDialog.showConfirmDialog(successmsg);
                 });
             }
             catch (Exception e) { throw new RuntimeException(e); }
-        }), loadingtext, successmsg);
+        }));
     }
 
-    public void showAndWaitCallableWithBar(ThrowingReportingRunnable<Exception> bwork, String loadingtext, String successmsg) {
+    public void showAndWaitCallableWithBar(ThrowingReportingRunnable<Exception> bwork, String loadingtext, @Nullable String successmsg) {
         setupStage(loadingtext);
 
         executeThreadOnFx(new Thread(() -> {
@@ -91,11 +93,12 @@ public class LoadingWindow implements ProgressHandler {
                 bwork.run(this);
                 Platform.runLater(() -> {
                     stage.close();
-                    SimpleDialog.showConfirmDialog(successmsg);
+                    if(successmsg != null)
+                        SimpleDialog.showConfirmDialog(successmsg);
                 });
             }
             catch (Exception e) { throw new RuntimeException(e); }
-        }), loadingtext, successmsg);
+        }));
     }
 
     @Override
