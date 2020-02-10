@@ -64,12 +64,36 @@ public class MongoDBManager {
     private final static String DATABASE_NAME = "task2";
 
     enum AppCollection {
-        PAST_WEATHER("measureswpast"), FORECAST_WEATHER("measureswfor"),
-        POLLUTION("measurespoll"), USERS("users"), LOCATIONS("locations");
+        LOCATIONS("locations", ReadConcern.LOCAL, WriteConcern.W2.withJournal(true), ReadPreference.nearest()),
+        PAST_WEATHER("measureswpast", ReadConcern.LOCAL, WriteConcern.W2.withJournal(true), ReadPreference.nearest()),
+        FORECAST_WEATHER("measureswfor", ReadConcern.LOCAL, WriteConcern.W2.withJournal(true), ReadPreference.nearest()),
+        POLLUTION("measurespoll", ReadConcern.LOCAL, WriteConcern.W2.withJournal(true), ReadPreference.nearest()),
+        USERS("users", ReadConcern.MAJORITY, WriteConcern.MAJORITY.withJournal(false), ReadPreference.primary());
 
         private final String name;
-        AppCollection(String name) { this.name = name; }
+        private final ReadConcern rc;
+        private final WriteConcern wc;
+        private final ReadPreference rp;
+        AppCollection(String name) { this(name, null, null, null); }
+        AppCollection(String name, ReadConcern rc, WriteConcern wc, ReadPreference rp) {
+            this.name = name;
+            this.rc = rc;
+            this.wc = wc;
+            this.rp = rp;
+        }
+
         public String getName() { return name; }
+
+        public MongoCollection<Document> get(MongoDatabase d) {
+            MongoCollection<Document> collection = d.getCollection(this.name);
+            if(rc != null)
+                collection = collection.withReadConcern(rc);
+            if(wc != null)
+                collection = collection.withWriteConcern(wc);
+            if(rp != null)
+                collection = collection.withReadPreference(rp);
+            return collection;
+        }
     };
 
     private static MongoDBManager INSTANCE = new MongoDBManager();
@@ -94,7 +118,7 @@ public class MongoDBManager {
      * @throws IOException due to OpenAQ exceptions
      */
     public void syncLocationList() throws IOException {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
         try {
             // duplicate check is made by unique compound index on (country, city), skip duplicate errors using ordered:false option
             collection.insertMany(FetchAdapter.getInstance().fetchAllCities(), new InsertManyOptions().ordered(false));
@@ -109,14 +133,14 @@ public class MongoDBManager {
      * @throws IOException due to OpenAQ exceptions
      */
     public void resetLocationList() throws IOException {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
         collection.deleteMany(new Document());
         collection.insertMany(FetchAdapter.getInstance().fetchAllCities());
     }
 
     public ArrayList<City> getLocationList(User.Status userStatus) {
         ArrayList<City> resultList = new ArrayList<>();
-        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
         MongoCursor<Document> cursor = null;
         if(userStatus == User.Status.NOTENABLED)
             cursor = collection.find(new Document("enabled", true)).iterator();
@@ -158,7 +182,7 @@ public class MongoDBManager {
      */
     public ArrayList<City> getTopLocationsByVoteCount(int n) {
         ArrayList<City> resultList = new ArrayList<>();
-        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
         MongoCursor<Document> cursor = collection.aggregate(Arrays.asList(
                 match(eq("enabled", false)),
                 project(fields(include("country", "city", "coordinates", "enabled"),
@@ -193,7 +217,7 @@ public class MongoDBManager {
     }
 
     public boolean registerUser(User user, String password) {
-        MongoCollection<Document> collection = database.getCollection("users");
+        MongoCollection<Document> collection = AppCollection.USERS.get(database);
         Document userDoc = new Document("username", user.getUsername())
                 .append("password", password)
                 .append("name", user.getName())
@@ -209,7 +233,7 @@ public class MongoDBManager {
     }
 
     public User getUserWithPassword(String username, String password) {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.USERS.getName());
+        MongoCollection<Document> collection = AppCollection.USERS.get(database);
         MongoCursor<Document> cursor = collection.find(new Document("username", username)).cursor();
         if(!cursor.hasNext())
             return null; // Missing user
@@ -226,7 +250,7 @@ public class MongoDBManager {
     }
 
     public ArrayList<User> getUsersByStatus(int status ) {
-        MongoCollection<Document> collection = database.getCollection("users");
+        MongoCollection<Document> collection = AppCollection.USERS.get(database);
         MongoCursor<Document> cursor = collection.find().cursor();
         if(!cursor.hasNext())
             return null; // No Users
@@ -263,7 +287,7 @@ public class MongoDBManager {
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate, ProgressHandler progress) throws IOException {
         if(progress != null) progress.setMaxProgress((int)ChronoUnit.DAYS.between(startDate, endDate));
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
+        MongoCollection<Document> collection = AppCollection.POLLUTION.get(database);
 
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> pollutionData = FetchAdapter.getInstance().fetchPollutionData(city, d);
@@ -282,7 +306,7 @@ public class MongoDBManager {
 
         if(progress != null) progress.setMaxProgress((int)ChronoUnit.DAYS.between(startDate, endDate));
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.PAST_WEATHER.getName());
+        MongoCollection<Document> collection = AppCollection.PAST_WEATHER.get(database);
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> mongoHourlyList = FetchAdapter.getInstance().fetchHistoricalData(city, d);
             addDataToCollection(collection, city, d, "weatherCondition", mongoHourlyList);
@@ -300,7 +324,7 @@ public class MongoDBManager {
 
         if(progress != null) progress.setMaxProgress((int)ChronoUnit.DAYS.between(startDate, endDate));
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.FORECAST_WEATHER.getName());
+        MongoCollection<Document> collection = AppCollection.FORECAST_WEATHER.get(database);
         for(LocalDate d = LocalDate.from(startDate); !d.equals(endDate.plusDays(1)); d = d.plusDays(1)) {
             List<Document> mongoHourlyList = FetchAdapter.getInstance().fetchForecastData(city, d);
             addDataToCollection(collection, city, d, "weatherForecast", mongoHourlyList);
@@ -561,7 +585,7 @@ public class MongoDBManager {
 
         HashSet<LocalDate> resultSet = new HashSet<>();
 
-        MongoCollection<Document> collection = database.getCollection(appCollection.getName());
+        MongoCollection<Document> collection = appCollection.get(database);
         AggregateIterable<Document> aggregateIterable = collection.aggregate(pipeline);
         for(Document d : aggregateIterable)
             resultSet.add(d.get("date", LocalDateTime.class).toLocalDate());
@@ -574,7 +598,7 @@ public class MongoDBManager {
         if(startDate.compareTo(endDate) > 0)
             return null;
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
+        MongoCollection<Document> collection = AppCollection.POLLUTION.get(database);
 
         List<Bson> pipeline = Arrays.asList(
                     match(and(lte("periodStart", endDate), gte("periodEnd", startDate),
@@ -620,7 +644,7 @@ public class MongoDBManager {
         if(startDate.compareTo(endDate) > 0)
             return null;
 
-        MongoCollection<Document> collection = database.getCollection(AppCollection.POLLUTION.getName());
+        MongoCollection<Document> collection = AppCollection.POLLUTION.get(database);
 
         List<Bson> pipeline = Arrays.asList(match(and(lt("periodStart",
                 endDate), gte("periodEnd",
@@ -655,7 +679,7 @@ public class MongoDBManager {
     }
 
     public void updateUserStatus (User user, int status) {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.USERS.getName());
+        MongoCollection<Document> collection = AppCollection.USERS.get(database);
 
         collection.updateOne(
                 eq("username", user.getUsername()),
@@ -663,7 +687,7 @@ public class MongoDBManager {
     }
 
     public void voteLocation(User user, City.CityName cityName) {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
         UpdateResult updateResult =
                 collection.updateOne(and(eq("country", cityName.getCountry()), eq("city", cityName.getCity())),
                         new Document("$addToSet", new Document("votes", user.getUsername())));
@@ -672,7 +696,7 @@ public class MongoDBManager {
     }
 
     public void unvoteLocation(User user, City.CityName cityName) {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
         UpdateResult updateResult =
                 collection.updateOne(and(eq("country", cityName.getCountry()), eq("city", cityName.getCity())),
                         new Document("$pull", new Document("votes", user.getUsername())));
@@ -689,7 +713,7 @@ public class MongoDBManager {
      */
     // TODO: we should update redundancy in all the measures collection
     public boolean updateCityStatus(City city, boolean enabled) {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
 
         Document updatedLocationDocument = collection.findOneAndUpdate(
                 and(eq("country", city.getCountry()), eq("city", city.getCity())),
@@ -707,7 +731,7 @@ public class MongoDBManager {
     }
 
     public ArrayList<City> getCitiesByStatus(boolean status) {
-        MongoCollection<Document> collection = database.getCollection(AppCollection.LOCATIONS.getName());
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
         ArrayList<City> result = new ArrayList<>();
 
         MongoCursor<Document> cursor = collection.find(eq("enabled", status)).iterator();
@@ -763,7 +787,7 @@ public class MongoDBManager {
                 project(fields(excludeId(), computed("city", "$_id.city"),
                         computed("country", "$_id.country"), include("measurements"))));
 
-        MongoCollection<Document> collection = database.getCollection(collectionName.getName());
+        MongoCollection<Document> collection = collectionName.get(database);
         AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
         return parseWeatherList(aggregateList, "");
     }
@@ -815,7 +839,7 @@ public class MongoDBManager {
                 project(fields(excludeId(), computed("city", "$_id.city"),
                         computed("country", "$_id.country"), include("measurements"))));
 
-        MongoCollection<Document> collection = database.getCollection(collectionName.getName());
+        MongoCollection<Document> collection = collectionName.get(database);
         AggregateIterable<Document> aggregateList = collection.aggregate(pipeline);
         return parseWeatherList(aggregateList, "");
     }
