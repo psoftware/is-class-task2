@@ -457,18 +457,15 @@ public class Task2GUIController {
 
         private void searchLocation(){
             // Button was clicked, close Filters, fetch correct locations and open Locations
-
             locationButtons.getChildren().clear();
             leftControls.setExpandedPane(paneLocations);
-            java.lang.String country = textCountry.getText();
+
+            String country = textCountry.getText();
             String city = textCity.getText();
-            for (City c: locations) {
-                if(country.toLowerCase().equals(c.getCountry().toLowerCase()) || country.equals(""))
-                    if(city.toLowerCase().equals(c.getCity().toLowerCase()) || city.equals("")){
-                        Button cityButton = new Button(c.getCity() + ", "+ c.getCountry());
-                        cityButton.setOnAction((event1 -> centerMapToCity(c)));
-                        locationButtons.getChildren().add(cityButton);
-                    }
+            for (City c: MongoDBManager.getInstance().searchLocation(userStatus, country, city)) {
+                Button cityButton = new Button(c.getCity() + ", "+ c.getCountry());
+                cityButton.setOnAction((event1 -> centerMapToCity(c)));
+                locationButtons.getChildren().add(cityButton);
             }
         }
 

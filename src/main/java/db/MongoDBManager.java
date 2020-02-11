@@ -144,13 +144,42 @@ public class MongoDBManager {
     }
 
     public ArrayList<City> getLocationList(User.Status userStatus) {
-        ArrayList<City> resultList = new ArrayList<>();
         MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
         MongoCursor<Document> cursor = null;
         if(userStatus == User.Status.NOTENABLED)
             cursor = collection.find(new Document("enabled", true)).iterator();
         else
             cursor = collection.find().iterator();
+
+        return parseLocations(cursor);
+    }
+
+    /**
+     * Search locations by country and city. Performs an exact case insensitive search
+     * @param userStatus filter based on enabled status
+     * @param country if empty, don't filter by country
+     * @param city if empty, don't filter by city
+     * @return list of found locations
+     */
+    public ArrayList<City> searchLocation(User.Status userStatus, String country, String city) {
+        MongoCollection<Document> collection = AppCollection.LOCATIONS.get(database);
+
+        Document query = new Document();
+        if(!country.equals(""))
+            query.append("country", country);
+        if(!city.equals(""))
+            query.append("city", city);
+        if(userStatus == User.Status.NOTENABLED)
+            query.append("enabled", true);
+
+        MongoCursor<Document> cursor = collection.find(query).collation(Collation.builder().locale("en")
+                .collationStrength(CollationStrength.SECONDARY).build()).cursor();
+
+        return parseLocations(cursor);
+    }
+
+    private ArrayList<City> parseLocations(MongoCursor<Document> cursor) {
+        ArrayList<City> resultList = new ArrayList<>();
         try {
             while (cursor.hasNext()) {
                 /*
@@ -284,9 +313,19 @@ public class MongoDBManager {
         database.getCollection(AppCollection.USERS.getName()).dropIndex(new Document("username", 1));
     }
 
-    // compound unique index on (country, city) TODO: test!
-    private void createLocationIndex() {
-        database.getCollection(AppCollection.LOCATIONS.getName()).createIndex(new Document("country", 1).append("city", 1), new IndexOptions().unique(true));
+    // compound unique index on (country, city)
+    protected void createLocationIndex() {
+        database.getCollection(AppCollection.LOCATIONS.getName()).createIndex(new Document("country", 1).append("city", 1),
+                new IndexOptions().unique(true).name("city_country_unique"));
+
+        database.getCollection(AppCollection.LOCATIONS.getName()).createIndex(new Document("country", 1).append("city", 1),
+                new IndexOptions().unique(false).name("city_country_en_collation2")
+                        .collation(Collation.builder().locale("en").collationStrength(CollationStrength.SECONDARY).build()));
+    }
+
+    protected void dropLocationIndex() {
+        database.getCollection(AppCollection.LOCATIONS.getName()).dropIndex("city_country_unique");
+        database.getCollection(AppCollection.LOCATIONS.getName()).dropIndex("city_country_en_collation2");
     }
 
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
