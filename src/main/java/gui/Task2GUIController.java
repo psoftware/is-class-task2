@@ -383,7 +383,11 @@ public class Task2GUIController {
             buttonShowAirPollutionForecast.setOnAction(
                     (event) -> {
                         HashSet<LocalDate> forecastDates = MongoDBManager.getInstance().getForecastWeatherAvailableDates(getSelectedCity());
-                        changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast(d1), forecastDates);
+                        HashSet<LocalDate> pollutionDates =  MongoDBManager.getInstance().getPollutionAvailableDates(selectedCity);
+                        boolean todayPollutionAvailable = pollutionDates.contains(LocalDate.now().minusDays(1)) ||
+                                pollutionDates.contains(LocalDate.now());
+                        changeTimePane(TimePaneType.SINGLEDATE, (d1, d2) -> showAirPollutionForecast(d1),
+                                (d) -> todayPollutionAvailable && forecastDates.contains(d));
                     });
         }
         // Admin additional use cases
