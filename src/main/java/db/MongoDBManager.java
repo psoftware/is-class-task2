@@ -73,6 +73,11 @@ public class MongoDBManager {
         private final String name;
         private final ReadConcern rc;
         private final WriteConcern wc;
+
+        public ReadConcern getReadConcern() { return rc; }
+        public WriteConcern getWriteConcern() { return wc; }
+        public ReadPreference getReadPreference() { return rp; }
+
         private final ReadPreference rp;
         AppCollection(String name) { this(name, null, null, null); }
         AppCollection(String name, ReadConcern rc, WriteConcern wc, ReadPreference rp) {
@@ -102,7 +107,7 @@ public class MongoDBManager {
     }
 
     private MongoClient mongoClient;
-    private MongoDatabase database;
+    protected MongoDatabase database;
 
     private MongoDBManager() {
         mongoClient = MongoClients.create(MONGO_URL);
@@ -271,11 +276,15 @@ public class MongoDBManager {
     }
 
     // single text unique index on username
-    private void createUserIndex() {
+    protected void createUserIndex() {
         database.getCollection(AppCollection.USERS.getName()).createIndex(new Document("username", 1), new IndexOptions().unique(true));
     }
 
-    // compound unique index on (country, city)
+    protected void dropUserIndex() {
+        database.getCollection(AppCollection.USERS.getName()).dropIndex(new Document("username", 1));
+    }
+
+    // compound unique index on (country, city) TODO: test!
     private void createLocationIndex() {
         database.getCollection(AppCollection.LOCATIONS.getName()).createIndex(new Document("country", 1).append("city", 1), new IndexOptions().unique(true));
     }
@@ -283,6 +292,28 @@ public class MongoDBManager {
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate) throws IOException {
         loadPollutionFromAPI(city, startDate, endDate, null);
     }
+
+    public boolean isMeasureCollection(AppCollection appCollection) {
+        return appCollection == AppCollection.PAST_WEATHER || appCollection == AppCollection.FORECAST_WEATHER
+                || appCollection == AppCollection.POLLUTION;
+    }
+
+    protected void createMeasuresIndex(AppCollection appCollection) {
+        if(!isMeasureCollection(appCollection))
+            throw new IllegalArgumentException("appCollection is not a measure collection!");
+
+        database.getCollection(appCollection.getName()).createIndex(
+                new Document("country", 1).append("city", 2).append("periodStart", 1).append("periodEnd", 1));
+    }
+
+    protected void dropMeasuresIndex(AppCollection appCollection) {
+        if(!isMeasureCollection(appCollection))
+            throw new IllegalArgumentException("appCollection is not a measure collection!");
+
+        database.getCollection(appCollection.getName()).dropIndex(
+                new Document("country", 1).append("city", 2).append("periodStart", 1).append("periodEnd", 1));
+    }
+
 
     public void loadPollutionFromAPI(City city, LocalDate startDate, LocalDate endDate, ProgressHandler progress) throws IOException {
         if(progress != null) progress.setMaxProgress((int)ChronoUnit.DAYS.between(startDate, endDate));
