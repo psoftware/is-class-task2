@@ -1,6 +1,8 @@
 package main.java.db;
 
 import com.mongodb.MongoCommandException;
+import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.CollationStrength;
 import main.java.User;
 import main.java.fetch.FetchUtils;
 import org.bson.Document;
@@ -13,6 +15,7 @@ public class IndexTests {
     public static void main(String[] args) throws InterruptedException {
         testIndexUser();
         testIndexPollution();
+        testIndexLocation();
     }
 
     public static int testWithRepetitions(Supplier<Document> testQuery) {
@@ -50,6 +53,13 @@ public class IndexTests {
                 .append("readConcern", appCollection.getReadConcern().asDocument()));
     }
 
+    public static Document explainFind(MongoDBManager.AppCollection appCollection, Document filter, Collation collation) {
+        return explainCommand(new Document("find", appCollection.getName())
+                .append("filter", filter)
+                .append("collation", collation.asDocument())
+                .append("readConcern", appCollection.getReadConcern().asDocument()));
+    }
+
     public static void testIndexUser() {
         Supplier<Document> testQuery =
                 () -> explainFind(MongoDBManager.AppCollection.USERS, new Document("username", "admin"));
@@ -73,6 +83,17 @@ public class IndexTests {
                 MongoDBManager.getInstance().createMeasuresIndex(MongoDBManager.AppCollection.POLLUTION);
 
         testIndex(testQuery, prepareTest1,prepareTest2, "POLLUTION index on (country,city,periodStart,periodEnd)");
+    }
+
+    public static void testIndexLocation() {
+        Supplier<Document> testQuery =
+                () -> explainFind(MongoDBManager.AppCollection.LOCATIONS,
+                        new Document("country", "iT").append("city", "RoMa"),
+                        Collation.builder().locale("en").collationStrength(CollationStrength.SECONDARY).build());
+        Runnable prepareTest1 = () -> {try { MongoDBManager.getInstance().dropLocationIndex(); } catch(MongoCommandException e) {}};
+        Runnable prepareTest2 = () -> MongoDBManager.getInstance().createLocationIndex();
+
+        testIndex(testQuery, prepareTest1, prepareTest2, "LOCATION index on (country,city)");
     }
 
     public static void testIndex(Supplier<Document> testQuery, Runnable prepareTest1, Runnable prepareTest2, String headertext) {
