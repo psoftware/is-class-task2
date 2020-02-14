@@ -18,16 +18,26 @@ public class IndexTests {
         testIndexLocation();
     }
 
-    public static int testWithRepetitions(Supplier<Document> testQuery) {
+    public static float[] testWithRepetitions(Supplier<Document> testQuery) {
         int N = 30;
 
-        int sum = 0;
-        for(int i=0; i<N; i++) {
-            Document explain = testQuery.get();
-            sum += getExecutionTime(explain);
-        }
+        int[] values = new int[N];
 
-        return sum/N;
+        // mean
+        float mean = 0;
+        for(int i=0; i<N; i++) {
+            values[i] = getExecutionTime(testQuery.get());
+            mean += values[i];
+        }
+        mean /= N;
+
+        // sample variance
+        float squareResSum = 0;
+        for(int i=0; i<N; i++)
+            squareResSum += Math.pow(values[i] - mean, 2);
+        squareResSum /= N-1;
+
+        return new float[] { mean, (float)Math.sqrt(squareResSum) };
     }
 
     private static void printExplain(Document explain) {
@@ -100,16 +110,16 @@ public class IndexTests {
         System.out.println("## " + headertext);
 
         prepareTest1.run();
-        int test1 = testWithRepetitions(testQuery);
+        float[] test1 = testWithRepetitions(testQuery);
         System.out.print("[No INDEX] ");
         printExplain(testQuery.get());
-        System.out.println(" execution Time: " + test1 + " ms");
+        System.out.println(" execution Time: " + test1[0] + " ms (" + test1[1] + " variance, 30 repetitions)");
 
         prepareTest2.run();
-        int test2 = testWithRepetitions(testQuery);
+        float[] test2 = testWithRepetitions(testQuery);
         System.out.print("[With INDEX] ");
         printExplain(testQuery.get());
-        System.out.println(" execution Time: " + test2 + " ms");
+        System.out.println(" execution Time: " + test2[0] + " ms (" + test2[1] + " variance, 30 repetitions)");
 
         System.out.println("## END\n");
     }
