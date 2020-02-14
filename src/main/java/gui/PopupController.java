@@ -169,7 +169,7 @@ public class PopupController {
                 lastDate = m.datetime;
                 j++;
                 Label hour = new Label(m.datetime.toString());
-                hour.getStyleClass().add("day-date");
+                hour.getStyleClass().add("label-parameter");
                 measurementsPane.add(hour, 0, j);
             }
 
@@ -295,7 +295,7 @@ public class PopupController {
                 lastDate = m.datetime;
                 j++;
                 Label hour = new Label(m.datetime.toString());
-                hour.getStyleClass().add("day-date");
+                hour.getStyleClass().add("label-parameter");
                 measurementsPane.add(hour, 0, j);
             }
 

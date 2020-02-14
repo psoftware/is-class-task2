@@ -7,14 +7,14 @@
     -fx-alignment: center;
 }
 
-.label-parameter, .username, .day-date, .city-name{
+.label-parameter, .username, .city-name{
     -fx-font-weight: bold;
 }
 
 .weather-icon{
 }
 
-.button{
+.button, .day-date{
     -fx-background-color:
             rgba(0,0,0,0.08),
             linear-gradient(#9a9a9a, #909090),
