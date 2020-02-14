@@ -109,7 +109,7 @@ public class PopupController {
         }
     }
 
-    public void showAirPollution(ArrayList<MeasureValue> dailyPollution) {
+    public void showAirPollution(ArrayList<MeasureValue> dailyPollution, boolean forecast) {
         final String[] POLLUTION_LIST = {"o3", "no2", "pm10", "pm25", "so2", "co", "bc"};
         HashMap<String, Integer> POLLUTION_MAP = new HashMap<>();
         for(int i=0; i<POLLUTION_LIST.length; i++) {
@@ -133,8 +133,14 @@ public class PopupController {
                 lastDate = m.datetime.toLocalDate();
                 j++;
                 Label day = new Label(lastDate.toString());
-                day.getStyleClass().add("day-date");
-                day.setOnMouseClicked((event -> Task2GUIController.INSTANCE.showHourlyPollution(m.datetime)));
+                if(!forecast) {
+                    day.getStyleClass().add("day-date");
+                    day.setOnMouseClicked((event -> Task2GUIController.INSTANCE.showHourlyPollution(m.datetime)));
+                    measurementsDialogTitle.setText("Daily Average Air Pollution Values");
+                }else{
+                    day.getStyleClass().add("label-parameter");
+                    measurementsDialogTitle.setText("Air Pollution Forecast");
+                }
                 measurementsPane.add(day, j, 0);
             }
 
@@ -143,7 +149,6 @@ public class PopupController {
             else
                 measurementsPane.add(new Label(df.format(m.value) + " " + m.unit), j, POLLUTION_MAP.get(m.name)+1);
         }
-        measurementsDialogTitle.setText("Daily Average Air Pollution Values");
     }
 
     public void showHourlyPollution(ArrayList<MeasureValue> hPollution){
@@ -359,6 +364,48 @@ public class PopupController {
                     measurementsPane.add(new Label(valuestring + " " + m.unit), PARAMETERS_MAP.get(m.name) + 1, j);
         }
         measurementsDialogTitle.setText("Hourly Weather Parameters Values");
+    }
+
+    public void showWeatherReliability(ArrayList<MeasureValue> dailyParameters, String collection) {
+        final String[] PARAMETERS_LIST = DarkSkyFetcher.MEASURE_UNITS.keySet().toArray(new String[1]);
+
+        HashMap<String, Integer> PARAMETERS_MAP = new HashMap<>();
+        for(int i=1; i<PARAMETERS_LIST.length; i++) {
+            String input = PARAMETERS_LIST[i];
+            input = Character.toUpperCase(input.charAt(0)) + input.substring(1);
+            Label param = new Label(input.replaceAll("(\\p{Ll})(\\p{Lu})","$1 $2"));
+            param.getStyleClass().add("label-parameter");
+
+            measurementsPane.add(param, 0, i+1);
+            PARAMETERS_MAP.put(PARAMETERS_LIST[i], i);
+        }
+
+        DecimalFormat df = new DecimalFormat("0.000");
+
+        // order by day
+        dailyParameters.sort((c1,c2) -> (c1.datetime.compareTo(c2.datetime) == 0) ?
+                c1.name.compareTo(c2.name) : c1.datetime.compareTo(c2.datetime));
+
+
+        LocalDate lastDate = null;
+        int j = 0;
+        for(MeasureValue m : dailyParameters) {
+            if(!m.datetime.toLocalDate().equals(lastDate)) {
+                lastDate = m.datetime.toLocalDate();
+                j++;
+                Label day = new Label(lastDate.toString());
+                day.getStyleClass().add("label-param");
+            }
+
+            String valuestring = (m.value instanceof Double) ? df.format(m.value) : m.value.toString();
+
+            if(!PARAMETERS_MAP.containsKey(m.name))
+                System.out.println("Invalid key " + m.name);
+            else
+                measurementsPane.add(new Label(valuestring + " " + m.unit), j, PARAMETERS_MAP.get(m.name) + 1);
+
+        }
+        measurementsDialogTitle.setText("Weather Forecast Reliability");
     }
 
 }

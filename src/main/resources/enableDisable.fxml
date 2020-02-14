@@ -5,14 +5,16 @@
 <?import javafx.scene.layout.*?>
 <ScrollPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="main.java.gui.PopupController"
-            stylesheets="@gridPane.css">
-    <GridPane maxHeight="+Infinity" maxWidth="+Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="300.0"
-              prefWidth="300.0"
-              fx:id="enableDisablePane">
-        <columnConstraints>
-            <ColumnConstraints halignment="CENTER"/>
-            <ColumnConstraints halignment="CENTER"/>
-        </columnConstraints>
-    </GridPane>
+            stylesheets="@gridPane.css" fitToWidth="true">
+    <VBox>
+        <Label styleClass="title" text="Users List"/>
+        <GridPane maxHeight="+Infinity" maxWidth="+Infinity" minHeight="-Infinity" minWidth="-Infinity"
+                  fx:id="enableDisablePane">
+            <columnConstraints>
+                <ColumnConstraints halignment="CENTER"/>
+                <ColumnConstraints halignment="CENTER"/>
+            </columnConstraints>
+        </GridPane>
+    </VBox>
 </ScrollPane>
 

@@ -562,7 +562,7 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showWeather(result, "");
+            pc.showWeatherReliability(result, "");
             setupStage(root,"Weather Forecast Reliability");
         }
 
@@ -589,7 +589,7 @@ public class Task2GUIController {
             }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showAirPollution(dailyPollution);
+            pc.showAirPollution(dailyPollution, false);
             setupStage(root,"Air Pollution");
         }
 
@@ -660,7 +660,7 @@ public class Task2GUIController {
             } catch (IOException e) { e.printStackTrace(); }
 
             PopupController pc = fxmlLoader.getController();
-            pc.showAirPollution(forecastPollution);
+            pc.showAirPollution(forecastPollution, true);
             setupStage(root,"Air Pollution Forecast");
         }
 
