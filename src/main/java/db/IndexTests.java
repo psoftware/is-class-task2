@@ -113,13 +113,13 @@ public class IndexTests {
         float[] test1 = testWithRepetitions(testQuery);
         System.out.print("[No INDEX] ");
         printExplain(testQuery.get());
-        System.out.println(" execution Time: " + test1[0] + " ms (" + test1[1] + " variance, 30 repetitions)");
+        System.out.println(" execution Time: " + test1[0] + " ms (" + test1[1] + " std, 30 repetitions)");
 
         prepareTest2.run();
         float[] test2 = testWithRepetitions(testQuery);
         System.out.print("[With INDEX] ");
         printExplain(testQuery.get());
-        System.out.println(" execution Time: " + test2[0] + " ms (" + test2[1] + " variance, 30 repetitions)");
+        System.out.println(" execution Time: " + test2[0] + " ms (" + test2[1] + " std, 30 repetitions)");
 
         System.out.println("## END\n");
     }
