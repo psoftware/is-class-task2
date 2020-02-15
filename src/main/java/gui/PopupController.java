@@ -16,6 +16,7 @@ import main.java.City;
 import main.java.Task2;
 import main.java.User;
 import main.java.db.MongoDBManager;
+import main.java.db.PageCursor;
 import main.java.fetch.DarkSkyFetcher;
 import main.java.measures.MeasureValue;
 
@@ -39,55 +40,55 @@ public class PopupController {
     @FXML
     private Label measurementsDialogTitle;
 
+    @FXML
+    private Button buttonPrev;
+
+    @FXML
+    private Button buttonNext;
+
 
     public PopupController() {
     }
 
-    public <T> void showEnableDisable(ArrayList<T> allList) {
+    public void showEnableDisable(PageCursor.PageableQuery<User> pageableQuery) {
+        PageCursor<User> pageCursor = new PageCursor(5, pageableQuery);
+        buttonPrev.setOnAction(e -> showEnableDisable(pageCursor.prevPage()));
+        buttonNext.setOnAction(e -> showEnableDisable(pageCursor.nextPage()));
+        showEnableDisable(pageCursor.currentPage());
+    }
+
+    public void showEnableDisable(ArrayList<User> allList) {
+        enableDisablePane.getChildren().clear();
 
         int i = 0;
-        for ( T obj  : allList) {
-            if (obj instanceof User) {
-                User u = (User) obj;
-                Label user = new Label(u.getUsername());
-                user.getStyleClass().add("username");
-                enableDisablePane.add(user, 0, i);
-                Button button = new Button(u.getStatus().equals(User.Status.ENABLED) ? "Disable" : "Enable");
-                button.setOnAction((event -> {
-                    if (button.getText().equals("Disable")) {
-                        button.setText("Enable");
-                        MongoDBManager.getInstance().updateUserStatus(u, 1);
-                    } else {
-                        button.setText("Disable");
-                        MongoDBManager.getInstance().updateUserStatus(u, 0);
-                    }
-                }));
-                enableDisablePane.add(button, 1, i);
-                i++;
-            }else if(obj instanceof City){
-                City c = (City) obj;
-                Label city = new Label(c.getCity());
-                city.getStyleClass().add("city-name");
-                enableDisablePane.add(city, 0, i);
-                Button button = new Button(c.isEnabled() ? "Disable" : "Enable");
-                button.setOnAction((event -> {
-                    if (button.getText().equals("Disable")) {
-                        button.setText("Enable");
-                        MongoDBManager.getInstance().updateCityStatus(c, false);
-                    } else {
-                        button.setText("Disable");
-                        MongoDBManager.getInstance().updateCityStatus(c, true);
-                    }
-                }));
-                enableDisablePane.add(button, 1, i);
-                i++;
-            }
+        for (User u : allList) {
+            Label user = new Label(u.getUsername());
+            user.getStyleClass().add("username");
+            enableDisablePane.add(user, 0, i);
+            Button button = new Button(u.getStatus().equals(User.Status.ENABLED) ? "Disable" : "Enable");
+            button.setOnAction((event -> {
+                if (button.getText().equals("Disable")) {
+                    button.setText("Enable");
+                    MongoDBManager.getInstance().updateUserStatus(u, 1);
+                } else {
+                    button.setText("Disable");
+                    MongoDBManager.getInstance().updateUserStatus(u, 0);
+                }
+            }));
+            enableDisablePane.add(button, 1, i);
+            i++;
         }
     }
 
-    public void showPromoteDemote(ArrayList<User> adminsList, ArrayList<User> notAdminsList) {
-        adminsList.addAll(notAdminsList);
-        ArrayList<User> allUsers = adminsList;
+    public void showPromoteDemote(PageCursor.PageableQuery<User> pageableQuery) {
+        PageCursor<User> pageCursor = new PageCursor(5, pageableQuery);
+        buttonPrev.setOnAction(e -> showPromoteDemote(pageCursor.prevPage()));
+        buttonNext.setOnAction(e -> showPromoteDemote(pageCursor.nextPage()));
+        showPromoteDemote(pageCursor.currentPage());
+    }
+
+    public void showPromoteDemote(ArrayList<User> allUsers) {
+        enableDisablePane.getChildren().clear();
 
         int i = 0;
         for (User u : allUsers) {

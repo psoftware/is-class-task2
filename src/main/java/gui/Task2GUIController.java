@@ -16,6 +16,7 @@ import javafx.util.Callback;
 import main.java.City;
 import main.java.User;
 import main.java.db.MongoDBManager;
+import main.java.db.PageCursor;
 import main.java.db.SettingsManager;
 import main.java.fetch.DarkSkyFetcher;
 import main.java.measures.MeasureValue;
@@ -664,13 +665,7 @@ public class Task2GUIController {
             setupStage(root,"Air Pollution Forecast");
         }
 
-        private void enableDisableUsers(){
-        ArrayList<User> userList = MongoDBManager.getInstance().getUsersByStatus(0);
-        ArrayList<User> notenabledUserList = MongoDBManager.getInstance().getUsersByStatus(1);
-        userList.addAll(notenabledUserList);
-        System.out.println(notenabledUserList);
-
-
+    private void enableDisableUsers(){
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisable.fxml"));
         Parent root = null;
         try {
@@ -680,28 +675,28 @@ public class Task2GUIController {
         }
 
         PopupController pc = fxmlLoader.getController();
-        pc.showEnableDisable(userList);
+        pc.showEnableDisable(
+                (pageCursor) -> MongoDBManager.getInstance()
+                        .getUsersByStatus(new User.Status[]{User.Status.NOTENABLED, User.Status.ENABLED}, pageCursor));
         setupStage(root,"Enable Or Disable Users");
-        }
+    }
 
 
     private void promoteDemoteAdmin(){
-            ArrayList<User> AdminsList = MongoDBManager.getInstance().getUsersByStatus(2);
-            ArrayList<User> notAdminsList = MongoDBManager.getInstance().getUsersByStatus(0);
-            notAdminsList.addAll(MongoDBManager.getInstance().getUsersByStatus(1));
-
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisable.fxml"));
-            Parent root = null;
-            try {
-                root = fxmlLoader.load();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            PopupController pc = fxmlLoader.getController();
-            pc.showPromoteDemote(AdminsList, notAdminsList);
-            setupStage(root,"Promote Or Demote Admins");
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("enableDisable.fxml"));
+        Parent root = null;
+        try {
+            root = fxmlLoader.load();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+        PopupController pc = fxmlLoader.getController();
+        pc.showPromoteDemote(
+                (pageCursor) -> MongoDBManager.getInstance()
+                        .getUsersByStatus(new User.Status[]{User.Status.NOTENABLED, User.Status.ENABLED, User.Status.ADMIN}, pageCursor));
+        setupStage(root,"Promote Or Demote Admins");
+    }
 
         private void showSettings() {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("settings.fxml"));

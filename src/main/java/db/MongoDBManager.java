@@ -283,22 +283,33 @@ public class MongoDBManager {
         return newUser;
     }
 
-    public ArrayList<User> getUsersByStatus(int status ) {
+    public ArrayList<User> getUsersByStatus(User.Status status, PageCursor<User> pageCursor) {
+        return getUsersByStatus(new User.Status[]{status}, pageCursor);
+    }
+
+    public ArrayList<User> getUsersByStatus(User.Status[] ORstatus, PageCursor<User> pageCursor) {
         MongoCollection<Document> collection = AppCollection.USERS.get(database);
-        MongoCursor<Document> cursor = collection.find().cursor();
-        if(!cursor.hasNext())
-            return null; // No Users
+
+        Integer[] inArray = new Integer[ORstatus.length]; int i=0;
+        for(User.Status status : ORstatus)
+            inArray[i++] = status.ordinal();
+
+        Document filter = new Document("status", new Document("$in", Arrays.asList(inArray)));
+        FindIterable<Document> queryIterable = collection.find(filter);
+        if(pageCursor != null)
+            queryIterable = queryIterable.skip(pageCursor.getPage()*pageCursor.getDocPerPage())
+                    .limit(pageCursor.getDocPerPage());
+
+        MongoCursor<Document> cursor = queryIterable.iterator();
 
         ArrayList<User> userList = new ArrayList<>();
         while(cursor.hasNext()) {
             Document userDoc = cursor.next();
-            if (userDoc.getInteger("status").equals(status)) {
-                User newUser = new User(userDoc.getString("username"),
-                        userDoc.getString("name"),
-                        userDoc.getString("surname"),
-                        User.Status.values()[userDoc.getInteger("status")]);
-                userList.add(newUser);
-            }
+            User newUser = new User(userDoc.getString("username"),
+                    userDoc.getString("name"),
+                    userDoc.getString("surname"),
+                    User.Status.values()[userDoc.getInteger("status")]);
+            userList.add(newUser);
         }
         return userList;
 
