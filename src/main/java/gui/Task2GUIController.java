@@ -176,6 +176,7 @@ public class Task2GUIController {
     private ArrayList<City> locations;
 
     private ArrayList<Marker> markers = new ArrayList<>();
+    private ArrayList<Marker> backgroundMarkers = new ArrayList<>();
 
     private ArrayList<MapLabel> labels = new ArrayList<>();
 
@@ -432,13 +433,18 @@ public class Task2GUIController {
 
         for (City c : locations) {
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
-            Marker marker = new Marker(getClass().getResource("/Map-Marker.png"), -10, -20).setPosition(coords)
+            Marker marker = new Marker(getClass().getResource("/Map-Marker.png"), -14, -24).setPosition(coords)
                     .setVisible(false);
             MapLabel label = new MapLabel(c.getCity(), -5, 15).setPosition(coords).setCssClass("label");
             markers.add(marker);
             labels.add(label);
             marker.attachLabel(label);
             mapView.addMarker(marker);
+
+            Marker backMarker = new Marker(getClass().getResource("/Map-Marker-3.png"), 0, 0).setPosition(coords)
+                    .setVisible(true);
+            backgroundMarkers.add(backMarker);
+            mapView.addMarker(backMarker);
         }
 
         mapView.addEventHandler(MapViewEvent.MAP_CLICKED, event -> {
