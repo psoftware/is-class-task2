@@ -68,7 +68,7 @@ public class MongoDBManager {
         PAST_WEATHER("measureswpast", ReadConcern.LOCAL, WriteConcern.W2.withJournal(true), ReadPreference.nearest()),
         FORECAST_WEATHER("measureswfor", ReadConcern.LOCAL, WriteConcern.W2.withJournal(true), ReadPreference.nearest()),
         POLLUTION("measurespoll", ReadConcern.LOCAL, WriteConcern.W2.withJournal(true), ReadPreference.nearest()),
-        USERS("users", ReadConcern.MAJORITY, WriteConcern.MAJORITY.withJournal(false), ReadPreference.primary());
+        USERS("users", ReadConcern.MAJORITY, WriteConcern.MAJORITY.withJournal(false), ReadPreference.nearest());
 
         private final String name;
         private final ReadConcern rc;
