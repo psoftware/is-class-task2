@@ -395,7 +395,8 @@ public class PopupController {
                 lastDate = m.datetime.toLocalDate();
                 j++;
                 Label day = new Label(lastDate.toString());
-                day.getStyleClass().add("label-param");
+                day.getStyleClass().add("label-parameter");
+                measurementsPane.add(day, j, 0);
             }
 
             String valuestring = (m.value instanceof Double) ? df.format(m.value) : m.value.toString();
