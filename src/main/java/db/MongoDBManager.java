@@ -610,12 +610,6 @@ public class MongoDBManager {
                 LocalDateTime datetime = (LocalDateTime) measurement.get("datetime");
                 List<Document> newMeasures = (List<Document>) measurement.get("measurements");
 
-                //the measurement must exist
-                Document findMeasurementDoc = new Document("city", city.getCity())
-                        .append("country", city.getCountry())
-                        .append("periodStart", weekStart)
-                        .append("periodEnd", weekEnd);
-
                 //pull measurement if exists
                 Document pullDocument;
                 if (arrayname.equals("pollutionMeasurements")) {
