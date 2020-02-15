@@ -175,7 +175,7 @@ public class Task2GUIController {
 
     private ArrayList<City> locations;
 
-    private ArrayList<Marker> markers = new ArrayList<>();
+    private HashMap<City, Marker> markersMap = new HashMap<>();
     private ArrayList<Marker> backgroundMarkers = new ArrayList<>();
 
     private ArrayList<MapLabel> labels = new ArrayList<>();
@@ -436,7 +436,7 @@ public class Task2GUIController {
             Marker marker = new Marker(getClass().getResource("/Map-Marker.png"), -14, -24).setPosition(coords)
                     .setVisible(false);
             MapLabel label = new MapLabel(c.getCity(), -5, 15).setPosition(coords).setCssClass("label");
-            markers.add(marker);
+            markersMap.put(c, marker);
             labels.add(label);
             marker.attachLabel(label);
             mapView.addMarker(marker);
@@ -480,18 +480,19 @@ public class Task2GUIController {
             }
         }
 
+        Marker oldSelectedMarker = null;
         private void centerMapToCity(City c){
-            //removing old marker
-            for (Marker m : markers) {
-                m.setVisible(false);
-            }
+            // hide old marker
+            if(oldSelectedMarker != null)
+                oldSelectedMarker.setVisible(false);
+
             leftControls.setExpandedPane(paneActions);
             Coordinate coords = new Coordinate(c.getCoords().lat, c.getCoords().lon);
             mapView.setCenter(coords).animationDurationProperty().set(1000);
-            for ( Marker m : markers) {
-                if (m.getPosition().equals(coords))
-                    m.setVisible(true);
-            }
+
+            Marker newSelectedMarker = markersMap.get(c);
+            newSelectedMarker.setVisible(true);
+            oldSelectedMarker = newSelectedMarker;
 
             setSelectedCity(c);
         }
