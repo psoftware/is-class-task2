@@ -51,7 +51,7 @@ public class PopupController {
     }
 
     public void showEnableDisable(PageCursor.PageableQuery<User> pageableQuery) {
-        PageCursor<User> pageCursor = new PageCursor(5, pageableQuery);
+        PageCursor<User> pageCursor = new PageCursor(10, pageableQuery);
         buttonPrev.setOnAction(e -> showEnableDisable(pageCursor.prevPage()));
         buttonNext.setOnAction(e -> showEnableDisable(pageCursor.nextPage()));
         showEnableDisable(pageCursor.currentPage());
@@ -81,7 +81,7 @@ public class PopupController {
     }
 
     public void showPromoteDemote(PageCursor.PageableQuery<User> pageableQuery) {
-        PageCursor<User> pageCursor = new PageCursor(5, pageableQuery);
+        PageCursor<User> pageCursor = new PageCursor(10, pageableQuery);
         buttonPrev.setOnAction(e -> showPromoteDemote(pageCursor.prevPage()));
         buttonNext.setOnAction(e -> showPromoteDemote(pageCursor.nextPage()));
         showPromoteDemote(pageCursor.currentPage());
